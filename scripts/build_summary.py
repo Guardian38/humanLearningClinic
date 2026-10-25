@@ -8,6 +8,7 @@
 - `# 제목` 한 번(페이지 이름), 바로 다음 문단은 머리말
 - `## 큰 절`(주차 등, 목차에 나옴), `### 항목`(검색·필터의 단위)
 - 문단, `- ` 목록과 `1. ` 번호 목록(2칸 들여쓰기로 한 단계 중첩), `> ` 인용(슬라이드 원문 정의), `| 표 |`
+- 코드 블록: ```로 시작하고 ```로 닫는다(여는 줄에 언어 이름을 붙여도 된다). 안의 줄은 들여쓰기까지 그대로 나온다
 - 글 안: `**굵게**`, `*기울임*`, `` `코드` ``, `[p33]`·`[p10, p39]`·`[4주차 p33]`·`[2-2 p7~14]`(쪽수 근거), `★`(시험 강조)
 """
 import html
@@ -19,10 +20,13 @@ REF = re.compile(r"\[((?:\d+-\d+ |\d+주차 )?p\d+(?:[~–-]\d+)?(?:, ?(?:\d+주
 
 def inline(s):
     s = html.escape(s, quote=False)
-    s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
+    # 코드 조각은 빼 두었다가 마지막에 넣는다(안의 `*`, `[p1]`을 서식으로 읽지 않게)
+    codes = []
+    s = re.sub(r"`([^`]+)`", lambda m: codes.append(m.group(1)) or f"\0{len(codes) - 1}\0", s)
     s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
     s = re.sub(r"(?<![\w*])\*([^*\s][^*]*?)\*(?![\w*])", r"<em>\1</em>", s)
     s = REF.sub(r'<span class="ref">\1</span>', s)
+    s = re.sub(r"\0(\d+)\0", lambda m: f"<code>{codes[int(m.group(1))]}</code>", s)
     return s.replace("★", '<span class="star" title="시험에 꼭 나온다고 공지되었거나 교수님이 강조한 것">★</span>')
 
 
@@ -36,6 +40,7 @@ def convert(md):
     sec = item = 0
     open_sec = open_item = False
     para, quote, table, lists = [], [], [], []  # lists: [(태그, 들여쓰기)]
+    code = None  # 코드 블록 안이면 줄 목록
 
     def flush_para():
         if para:
@@ -76,6 +81,15 @@ def convert(md):
 
     for raw in lines:
         line = raw.rstrip()
+        if code is not None:
+            if line.strip().startswith("```"):
+                out.append('<pre class="code"><code>' + html.escape("\n".join(code), quote=False) + "</code></pre>")
+                code = None
+            else:
+                code.append(line)
+            continue
+        if line.lstrip().startswith("```"):
+            flush_all(); code = []; continue
         m_list = re.match(r"^( *)([-*]|\d+\.) (.*)$", line)
         if line.startswith("# ") and not title:
             flush_all(); title = line[2:].strip(); continue
@@ -127,6 +141,8 @@ def convert(md):
         if title and not lede and not open_sec and not para:
             lede = line.strip(); continue
         para.append(line.strip())
+    if code is not None:
+        sys.exit("오류: 닫히지 않은 코드 블록(```)이 있습니다")
     flush_all(); close_item()
     if open_sec:
         out.append("</section>")
@@ -186,6 +202,8 @@ blockquote.def::before {{ content: "원문"; display: block; font: 500 10px/1 va
 .ref {{ font: 500 11px/1 var(--f-mono); color: var(--muted); border: 1px solid var(--rule); border-radius: 3px; padding: 2px 5px; margin-left: 4px; white-space: nowrap; vertical-align: 2px; }}
 .star {{ color: var(--star); font-weight: 700; }}
 code {{ font: 14px var(--f-mono); background: var(--sheet); border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; }}
+pre.code {{ margin: 12px 0 16px; padding: 12px 16px; overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; }}
+pre.code code {{ font-size: 13.5px; line-height: 1.6; background: none; border: 0; padding: 0; white-space: pre; }}
 .tbl {{ overflow-x: auto; margin: 12px 0 16px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }}
 table {{ border-collapse: collapse; width: 100%; font-size: 14.5px; line-height: 1.6; }}
 th, td {{ text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--rule); }}
@@ -206,7 +224,7 @@ tr:last-child td {{ border-bottom: 0; }}
 <main>
 <header><h1>{title_html}</h1><p class="lede">{lede}</p>
 <div class="tools">
-<input type="search" id="q" placeholder="용어로 찾기 (예: 양화사, 반례)" aria-label="요약에서 찾기">
+<input type="search" id="q" placeholder="용어로 찾기" aria-label="요약에서 찾기">
 <label><input type="checkbox" id="starOnly"> ★ 항목만</label>
 <span class="count" id="count"></span>
 </div></header>
