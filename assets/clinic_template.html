@@ -179,6 +179,8 @@ textarea {
 .causes button { font: inherit; font-size: .85rem; border: 1px solid var(--border); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
 .causes button[aria-pressed="true"] { border-color: var(--bad); color: var(--bad); background: var(--bad-bg); font-weight: 600; }
 .think { color: var(--claude); font-size: .9rem; }
+/* Claude 호출 중 경과 시간: 타이머가 data-el을 채운다 */
+.think[data-el]::after { content: attr(data-el); color: var(--muted); }
 .err { color: var(--bad); font-size: .88rem; }
 .mis { font-weight: 700; color: var(--claude); }
 
@@ -249,7 +251,7 @@ sub, sup { line-height: 0; }
 
 <div class="wrap">
   <h1>@@TITLE@@</h1>
-  <p class="lede">문제를 풀 때마다 개념별 숙련도가 쌓이고, 약한 개념과 복습할 문제가 먼저 나옵니다. 틀린 문제는 원인을 고르면 Claude가 그 오답을 겨냥한 후속 문제를 만들고, "개념 혼동"이면 어떤 생각으로 틀렸는지 물어 오개념을 진단합니다. 5문제마다 한 번은 개념 하나를 골라 기억을 되살립니다. 정답이나 해설이 이상하면 이의를 제기해 Claude의 검토를 받고, 문제를 고치거나 뺄 수 있습니다.</p>
+  <p class="lede">문제를 풀 때마다 개념별 숙련도가 쌓이고, 약한 개념과 복습할 문제가 먼저 나옵니다. 틀린 문제는 원인을 고르면 Claude가 그 오답을 겨냥한 후속 문제를 만들고, "개념 혼동"이면 어떤 생각으로 틀렸는지 물어 오개념을 진단합니다. 5문제마다 한 번은 개념 하나를 골라 기억을 되살립니다. 풀 수 없는 문제는 "모르겠음"을 누르면 정답과 함께 Claude의 자세한 설명을 볼 수 있습니다. 정답이나 해설이 이상하면 이의를 제기해 Claude의 검토를 받고, 문제를 고치거나 뺄 수 있습니다.</p>
   <div class="status" id="status">
     <span><span class="dot warn" id="dbDot"></span>기록 저장소 <b id="dbTxt">연결 중</b></span>
     <span><span class="dot warn" id="aiDot"></span>Claude <b id="aiTxt">확인 중</b></span>
@@ -311,6 +313,8 @@ const QUESTIONS = DATA.questions.map(q => ({ ...q, concept: q.c, u: unitOf(q.c) 
 const QMAP = new Map(QUESTIONS.map(q => [q.id, q]));
 const LETTERS = ['①', '②', '③', '④', '⑤'];
 const CAUSES = { concept: '개념 혼동', calc: '계산 실수', misread: '문제를 잘못 읽음', guess: '찍음' };
+// '모르겠음'으로 넘긴 문제는 고를 원인이 없으므로 원인 칩(CAUSES)에는 넣지 않고 집계에만 쓴다
+const CAUSE_LABELS = { ...CAUSES, dunno: '모르겠음', none: '원인 미선택' };
 const VERDICT = { correct: '맞음', partial: '부분 정답', wrong: '틀림' };
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -777,6 +781,7 @@ let sample = null, aiOff = false;
 async function initClaude() {
   try { sample = window.claude && window.claude.use ? await window.claude.use('sample') : null; } catch (e) { sample = null; }
   if (sample) {
+    sample = timed(sample);
     setStatus('#aiDot', '#aiTxt', 'on', '사용 가능 (첫 사용 때 허용 요청)');
     try { const L = await sample.limits(); imgOK = !!(L && L.images); } catch (e) { imgOK = false; }
   }
@@ -784,6 +789,39 @@ async function initClaude() {
   renderCard();
 }
 const aiOn = () => !!sample && !aiOff;
+// 호출 중에는 "…중입니다" 옆에 경과 시간을 1초마다 붙인다(가장 최근 호출 기준).
+// 사용 한도·빈도 제한(rate_limited)에 걸리면 상태 줄에 남겨 두고, 다음 호출이 성공하면 되돌린다.
+// 계정의 남은 사용량은 sample API가 알려 주지 않으므로 세지 않는다
+const LIVE = [];
+let liveTimer = null, limitedAt = 0;
+function tickLive() {
+  const t0 = LIVE[LIVE.length - 1];
+  const s = t0 ? Math.round((Date.now() - t0) / 1000) : 0;
+  document.querySelectorAll('.think').forEach(el => {
+    if (t0) el.dataset.el = ` ${s}초${s >= 30 ? ' · 오래 걸리면 취소하고 다시 눌러 보세요' : ''}`;
+    else delete el.dataset.el;
+  });
+  if (!t0) { clearInterval(liveTimer); liveTimer = null; }
+}
+function timed(raw) {
+  const wrap = call => async (input, opts) => {
+    const t0 = Date.now();
+    LIVE.push(t0);
+    if (!liveTimer) liveTimer = setInterval(tickLive, 1000);
+    try {
+      const r = await call(input, opts);
+      if (limitedAt) { limitedAt = 0; setStatus('#aiDot', '#aiTxt', 'on', '사용 가능'); }
+      return r;
+    } finally {
+      LIVE.splice(LIVE.indexOf(t0), 1);
+      tickLive();
+    }
+  };
+  const f = wrap((i, o) => raw(i, o));
+  f.json = wrap((i, o) => raw.json(i, o));
+  f.limits = () => raw.limits();
+  return f;
+}
 function aiError(e) {
   const c = e && e.code;
   if (c === 'cancelled') return '';
@@ -791,7 +829,11 @@ function aiError(e) {
     aiOff = true; setStatus('#aiDot', '#aiTxt', 'off', '허용되지 않음, 직접 채점으로 진행');
     return 'Claude 사용이 허용되지 않았습니다. 직접 채점으로 진행하세요.';
   }
-  if (c === 'rate_limited') return '요청이 많아 잠시 막혔습니다. 조금 뒤 다시 눌러 주세요.';
+  if (c === 'rate_limited') {
+    limitedAt = Date.now();
+    setStatus('#aiDot', '#aiTxt', 'warn', `사용 한도·빈도 제한에 걸림 (${new Date(limitedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}), 잠시 뒤 다시`);
+    return '요청이 많거나 Claude 사용 한도에 걸렸습니다. 이 클리닉을 다른 탭에도 열어 두었다면 닫고, 잠시 뒤 다시 눌러 주세요. 남은 사용량은 claude.ai 설정의 사용량 화면에서 확인할 수 있습니다.';
+  }
   if (c === 'session_expired') return 'claude.ai에 다시 로그인한 뒤 시도해 주세요.';
   if (c === 'invalid_json' || c === 'bad_question') return '응답 형식이 깨졌습니다. 다시 눌러 주세요.';
   if (c === 'refused') return 'Claude가 이 요청에 답하지 않았습니다. 내용을 조금 바꿔 다시 시도해 주세요.';
@@ -872,7 +914,12 @@ const ALT_RULE = '정답에 이르는 근거나 설명이 여러 갈래면(모�
 function context(q, a) {
   const [cname, note] = CONCEPTS[q.concept];
   let s = `[문제] ${PT(q, q.q)}\n` + figText(q);
-  if (q.t === 'mc') {
+  if (a.dunno) {
+    if (q.t === 'mc') s += `[보기]\n${q.o.map((o, i) => `${i + 1}. ${PT(q, o)}`).join('\n')}\n[정답] ${q.a + 1}번: ${PT(q, q.o[q.a])}\n[해설] ${PT(q, q.e || '')}\n`;
+    else if (q.t === 'short') s += `[정답] ${ansText(q)}\n[풀이·해설] ${PT(q, q.e || '')}\n`;
+    else s += `[모범 답안] ${PT(q, q.a)}\n${altText(q)}${q.run ? `[의도한 출력]\n${q.run.out}\n` : ''}`;
+    s += '[학생의 답] 답하지 않고 "모르겠음"을 눌렀다\n';
+  } else if (q.t === 'mc') {
     s += `[보기]\n${q.o.map((o, i) => `${i + 1}. ${PT(q, o)}`).join('\n')}\n`;
     s += `[정답] ${q.a + 1}번: ${PT(q, q.o[q.a])}\n[학생이 고른 답] ${a.pick + 1}번: ${PT(q, q.o[a.pick])}\n[해설] ${PT(q, q.e || '')}\n`;
   } else if (q.t === 'short') {
@@ -1061,7 +1108,7 @@ function followupNote(a) {
   return '<div class="row"><button type="button" class="btn claude small" data-act="gen">이 오답으로 후속 문제 만들기</button></div>';
 }
 function causeHTML(a) {
-  if (!isMiss(a)) return '';
+  if (!isMiss(a) || a.dunno) return '';
   const chips = Object.entries(CAUSES).map(([k, v]) => `<button type="button" data-act="cause" data-k="${k}" aria-pressed="${a.cause === k}">${v}</button>`).join('');
   return `<div class="panel"><span class="lbl">왜 틀렸나요?</span><div class="causes">${chips}</div>${a.cause === 'concept' ? probeHTML(a) : ''}${followupNote(a)}</div>`;
 }
@@ -1182,6 +1229,34 @@ function gradeHTML(a, q) {
   h += `<div class="row"><span class="hint">${g.by === 'claude' ? '판정이 이상하면 바꾸기:' : '판정 바꾸기:'}</span>${ov}</div>`;
   return h;
 }
+// 모르겠음: 틀림으로 기록하고 정답·해설을 보여 준 뒤, Claude가 처음 배우는 사람에게 하듯 자세히 설명한다
+function dunnoAnswerHTML(q) {
+  if (q.t === 'mc') {
+    const opts = q.o.map((o, i) => `<button type="button" class="opt ${i === q.a ? 'right' : 'dim'}" disabled><span class="k">${LETTERS[i]}</span><span>${T(q, o)}</span></button>`).join('');
+    return `<div class="opts">${opts}</div><div class="panel ok"><span class="lbl">정답은 ${LETTERS[q.a]}</span>${T(q, q.e || '')}</div>`;
+  }
+  if (q.t === 'short') return `<div class="panel ok"><span class="lbl">정답 ${esc(ansText(q))}</span>${T(q, q.e || '')}</div>`;
+  return `<div class="panel ok"><span class="lbl">모범 답안</span>${T(q, q.a)}</div>` + altHTML(q) + (isCodeQ(q) ? runHTML(q, null) : '');
+}
+function explainHTML(q, a) {
+  const x = a.explain, u = P.ui;
+  let h = '<div class="panel claude"><span class="lbl">자세한 설명</span>';
+  if (x) {
+    const list = (t, arr, tag) => arr.length ? `<p style="margin:10px 0 0"><b>${t}</b></p><${tag} style="margin:4px 0 0">${arr.map(s => `<li>${richText(s)}</li>`).join('')}</${tag}>` : '';
+    if (x.asks) h += `<p style="margin:0"><b>이 문제가 묻는 것</b></p><div>${richText(x.asks)}</div>`;
+    if (x.concept) h += `<p style="margin:10px 0 0"><b>먼저 알아야 할 개념</b></p><div>${richText(x.concept)}</div>`;
+    h += list('풀이 순서', x.steps, 'ol') + list('헷갈리기 쉬운 점', x.traps, 'ul');
+    if (x.remember) h += `<p style="margin:10px 0 0"><b>기억할 것</b> ${richText(x.remember)}</p>`;
+  } else if (u.explaining) h += `<span class="think">Claude가 설명을 쓰는 중입니다…</span> <button type="button" class="btn small" data-act="stop">취소</button>`;
+  else if (!aiOn()) h += `<p style="margin:0 0 6px">Claude를 쓸 수 없어 강의 노트 요약을 대신 보여 줍니다.</p><div>${esc(CONCEPTS[q.concept][1])}</div>`;
+  else h += `<p style="margin:0 0 8px">정답과 해설만으로 이해가 안 되면 Claude가 개념부터 단계별로 설명합니다.</p><button type="button" class="btn claude solid" data-act="explain">자세한 설명 보기</button>`;
+  if (u.explainErr) h += `<p class="err" style="margin:8px 0 0">${esc(u.explainErr)}</p>`;
+  return h + '</div>';
+}
+function dunnoBody(q, a) {
+  const h = `<div class="ansline"><span class="verdict wrong">모르겠음</span><span class="hint">틀림으로 기록했습니다. 설명을 읽고 나면 곧 다시 나옵니다.</span></div>`;
+  return h + hintsHTML(q, a) + dunnoAnswerHTML(q) + explainHTML(q, a) + followupNote(a);
+}
 const altHTML = q => (q.alts || []).length ? `<div class="panel"><span class="lbl">이렇게 답해도 맞음</span>${q.alts.length > 1 ? '<ul>' + q.alts.map(x => `<li>${T(q, x)}</li>`).join('') + '</ul>' : T(q, q.alts[0])}</div>` : '';
 function openBody(q, a) {
   const u = P.ui;
@@ -1270,7 +1345,7 @@ function objectionHTML(q, a) {
     if (r.revised) h += `<div class="panel" style="background:var(--surface)"><span class="lbl">고친 문제 제안${r.changes ? ' · ' + esc(r.changes) : ''}</span>${fixPreview(q, r)}</div>`;
     h += '<div class="row">';
     if (r.revised) h += `<button type="button" class="btn claude solid" data-act="oapply">수정안 적용</button>`;
-    if (r.regrade && a && a.grade && verdictOf(a) !== r.regrade) h += `<button type="button" class="btn" data-act="oregrade">판정을 "${VERDICT[r.regrade]}"으로 바꾸기</button>`;
+    if (r.regrade && a && a.grade && !a.dunno && verdictOf(a) !== r.regrade) h += `<button type="button" class="btn" data-act="oregrade">판정을 "${VERDICT[r.regrade]}"으로 바꾸기</button>`;
     h += `<button type="button" class="btn ${r.suggest === 'ban' ? 'primary' : ''}" data-act="oban">이 문제 빼기</button>`;
     h += `<button type="button" class="btn" data-act="ocancel">그대로 두기</button></div>`;
     if (r.suggest === 'ban') h += '<p class="hint" style="margin:6px 0 0">Claude는 고쳐 쓰기보다 빼는 쪽을 권합니다.</p>';
@@ -1303,13 +1378,14 @@ function renderCard() {
   }
   if (q) {
     h += `<div class="stem">${T(q, q.q)}</div>` + figHTML(q);
-    h += q.t === 'mc' ? mcBody(q, a) : q.t === 'short' ? shortBody(q, a) : openBody(q, a);
+    h += a && a.dunno ? dunnoBody(q, a) : q.t === 'mc' ? mcBody(q, a) : q.t === 'short' ? shortBody(q, a) : openBody(q, a);
     h += objectionHTML(q, a);
     h += disputeHTML(q);
   } else h += recallBody(cid);
   const canDispute = q && !disputed(q.id) && !P.ui.disputeOpen;
   const canObject = canDispute && a && graded(a) && !P.ui.obj;
-  h += `<div class="row" style="margin-top:18px">${canObject ? '<button type="button" class="btn small ghost" data-act="oopen">정답·해설에 이의 제기</button>' : ''}${canDispute ? '<button type="button" class="btn small ghost" data-act="dopen">이 문제 빼기</button>' : ''}<span class="spacer"></span><button type="button" class="btn ${a || (q && disputed(q.id)) ? 'primary' : ''}" data-act="next">${a || (q && disputed(q.id)) ? '다음 문제' : '건너뛰기'}</button></div>`;
+  const canDunno = q && !a && !disputed(q.id) && !P.ui.grading && !P.ui.running && !P.ui.selfGrade;
+  h += `<div class="row" style="margin-top:18px">${canObject ? '<button type="button" class="btn small ghost" data-act="oopen">정답·해설에 이의 제기</button>' : ''}${canDispute ? '<button type="button" class="btn small ghost" data-act="dopen">이 문제 빼기</button>' : ''}<span class="spacer"></span>${canDunno ? '<button type="button" class="btn" data-act="dunno" title="틀림으로 기록하고 정답과 자세한 설명을 봅니다">모르겠음</button>' : ''}<button type="button" class="btn ${a || (q && disputed(q.id)) ? 'primary' : ''}" data-act="next">${a || (q && disputed(q.id)) ? '다음 문제' : '건너뛰기'}</button></div>`;
   paint($('#card'), h);
 }
 
@@ -1344,7 +1420,7 @@ function renderSummary() {
   if (timed.length) h += `<p class="hint" style="margin:8px 0 0">문제당 평균 풀이 시간 ${fmtSecs(Math.round(timed.reduce((s, a) => s + a.secs, 0) / timed.length))}${qs.some(a => a.hints) ? ` · 힌트를 본 문제 ${qs.filter(a => a.hints).length}개` : ''}</p>`;
   h += `<h2 style="margin-top:20px">이번에 다룬 개념</h2>`;
   h += touched.length ? `<div class="sumlist">${touched.map(x => `<div class="sumrow"><span class="cpt ${cls[x.n.status]}" style="cursor:default"><span class="s"></span>${esc(CONCEPTS[x.c][0])}</span><span class="mono">${pct(x.b)} → ${pct(x.n)}</span><span class="delta ${x.d > 0.001 ? 'up' : x.d < -0.001 ? 'down' : ''}">${x.d > 0.001 ? '▲' : x.d < -0.001 ? '▼' : '–'}</span></div>`).join('')}</div>` : '<p class="empty">아직 푼 문제가 없습니다.</p>';
-  if (misses.length) h += `<h2 style="margin-top:20px">틀린 원인</h2><p style="margin:0">${Object.entries({ ...CAUSES, none: '원인 미선택' }).filter(([k]) => cc[k]).map(([k, l]) => `${l} ${cc[k]}`).join(' · ')}</p>`;
+  if (misses.length) h += `<h2 style="margin-top:20px">틀린 원인</h2><p style="margin:0">${Object.entries(CAUSE_LABELS).filter(([k]) => cc[k]).map(([k, l]) => `${l} ${cc[k]}`).join(' · ')}</p>`;
   if (mis.length) h += `<h2 style="margin-top:20px">이번에 찾은 오개념</h2><ul class="mislist">${mis.map(a => `<li><span class="mis">${esc(a.probe.misconception)}</span><span class="c">${esc(a.probe.fix)}</span></li>`).join('')}</ul>`;
   h += `<h2 style="margin-top:20px">다음 복습</h2><p style="margin:0">지금 복습할 문제 ${dueNow}개 · 내일까지 ${due1}개 · 일주일 안에 ${due7}개${fu ? ` · 대기 중인 AI 후속 문제 ${fu}개` : ''}</p>
     <p class="hint" style="margin:4px 0 0">맞힌 문제는 1일, 3일, 7일, 16일 간격으로 다시 나오고, 틀린 문제는 바로 다음 세션(같은 세션이면 3문제 뒤)에 다시 나옵니다.</p>`;
@@ -1503,6 +1579,35 @@ JSON 하나로만 답하라:
   renderCard();
 }
 
+async function explain(a) {
+  const q = P.q; if (!a || !q) return;
+  const ctl = P.ctl = new AbortController();
+  P.ui.explaining = true; P.ui.explainErr = ''; renderCard();
+  const prompt = `${ROLE}
+학생이 아래 문제를 풀지 못하고 "모르겠음"을 눌렀다. 정답과 해설(또는 모범 답안)은 화면에 이미 보인다. 그것을 그대로 되풀이하지 말고, 이 문제를 처음 보는 학생도 이해하도록 강의 노트를 바탕으로 자세히 가르쳐라.
+- 강의 노트의 용어와 표기를 쓰고, 노트 범위 밖 내용은 끌어오지 않는다.
+- 코드나 계산이 있으면 한 줄(한 단계)씩 무엇을 하는지 풀어 쓴다.
+- 정답 위치를 "첫 번째 보기"처럼 가리키지 말고 내용으로 말한다.
+- ${MATH_RULE}
+
+${context(q, a)}
+
+JSON 하나로만 답하라:
+{"asks":"이 문제가 묻는 것을 1~2문장으로","concept":"풀기 전에 알아야 할 개념을 3~5문장으로","steps":["정답에 이르는 단계를 차례대로 3~6개"],"traps":["흔한 오답이나 헷갈리는 점과 왜 틀리는지 1~3개"],"remember":"시험장에서 기억할 한 줄 요점"}`;
+  try {
+    const r = await sample.json(prompt, { signal: ctl.signal });
+    if (P.aid !== a.id) return;
+    const s = x => typeof x === 'string' ? x.trim() : '', arr = x => Array.isArray(x) ? x.map(s).filter(Boolean).slice(0, 8) : [];
+    a.explain = { asks: s(r && r.asks), concept: s(r && r.concept), steps: arr(r && r.steps), traps: arr(r && r.traps), remember: s(r && r.remember) };
+    P.ui.explaining = false;
+    persist(a);
+  } catch (e) {
+    if (P.aid !== a.id) return;
+    P.ui.explaining = false; P.ui.explainErr = aiError(e) ? '설명을 받지 못했습니다. ' + aiError(e) : '';
+  }
+  renderCard();
+}
+
 /* ---------- 정답·해설 이의 검토 ---------- */
 function cleanReview(r, q) {
   if (!r || typeof r !== 'object') return null;
@@ -1590,7 +1695,7 @@ function applyFix() {
   const reset = q.t === 'mc' ? (f.a !== prev.a || JSON.stringify(f.o) !== JSON.stringify(prev.o))
     : q.t === 'short' ? !sameKey([].concat(f.ans)[0], [].concat(prev.ans)[0]) : f.a !== prev.a;
   // 학생 답이 고친 정답으로도 맞고 채점 기준이 크게 바뀌지 않았으면(retest가 아니면) 이번 풀이를 맞은 것으로 남기고 다시 내지 않는다
-  const okNow = !a ? false : q.t === 'mc' ? prev.o[a.pick] === f.o[f.a]
+  const okNow = !a || a.dunno ? false : q.t === 'mc' ? prev.o[a.pick] === f.o[f.a]
     : q.t === 'short' ? [].concat(f.ans).some(x => sameKey(a.answer || '', x))
     : (r.regrade || verdictOf(a)) === 'correct';
   const keep = reset && okNow && !r.retest;
@@ -1660,6 +1765,7 @@ const CAUSE_DIR = {
   calc: '같은 계산 절차를 다른 숫자로 다시 연습하는 문제. 답이 깔끔한 수로 떨어지게 한다.',
   misread: '조건을 끝까지 꼼꼼히 읽어야 풀리는 문제. 다만 말장난이나 억지 함정은 금지.',
   guess: '같은 개념을 다른 각도에서 묻는 문제. 개념을 실제로 알아야만 풀린다.',
+  dunno: '학생이 풀지 못하고 "모르겠음"을 눌러 정답과 설명을 읽었다. 설명한 핵심을 실제로 이해했는지 확인하는 문제를, 원래 문제보다 한 단계 쉽게 낸다.',
   none: '같은 개념을 다른 각도에서 묻는 문제.'
 };
 async function genFollowup(a) {
@@ -1671,11 +1777,12 @@ async function genFollowup(a) {
     .map(f => `- ${f.changes || '수정됨'} (학생 이의: ${String(f.objection || '').slice(0, 160)})`).join('\n') || '(없음)';
   const siblings = allQ().filter(x => x.concept === q.concept && x.id !== q.id).slice(0, 25).map(x => `- ${PT(x, x.q).slice(0, 140)}`).join('\n') || '(없음)';
   const p = a.probe && a.probe.misconception ? `${a.probe.misconception}: ${a.probe.diagnosis}` : '(진단 없음)';
+  const x = a.explain;
   const prompt = `${ROLE}
 학생이 아래 문제를 틀렸다. 이 오답을 겨냥한 새 연습 문제를 1개 만들어라.
 
-[틀린 원인] ${CAUSES[a.cause] || '원인 미선택'}
-[진단된 오개념] ${p}
+[틀린 원인] ${CAUSE_LABELS[a.cause] || '원인 미선택'}
+[진단된 오개념] ${p}${x ? `\n[학생이 읽은 설명의 요점] ${x.concept} / 기억할 것: ${x.remember}` : ''}
 [출제 방향] ${CAUSE_DIR[a.cause || 'none']}
 
 반드시 지킬 규칙:
@@ -1728,6 +1835,13 @@ $('#card').addEventListener('click', e => {
   const act = b.dataset.act, q = P.q, a = cur();
   if (act === 'pick' && !a) { const i = +b.dataset.i; newAttempt({ pick: i, correct: i === q.a, guessed: false }); }
   else if (act === 'guess' && a) { a.guessed = !a.guessed; persist(a); }
+  else if (act === 'dunno' && q && !a) {
+    const base = q.t === 'mc' ? { pick: -1, correct: false, guessed: false } : { answer: '', correct: false, grade: { by: 'dunno', verdict: 'wrong' }, override: null };
+    const na = newAttempt({ ...base, dunno: true, cause: 'dunno' });
+    renderSide();
+    if (aiOn()) return explain(na);
+  }
+  else if (act === 'explain' && a && a.dunno) return explain(a);
   else if (act === 'cause' && a) { a.cause = a.cause === b.dataset.k ? null : b.dataset.k; persist(a); }
   else if (act === 'grade') return grade();
   else if (act === 'submitShort' && !a) return submitShort();
@@ -1771,7 +1885,7 @@ $('#card').addEventListener('click', e => {
     persist({ id: q.id, qid: q.id, concept: q.concept, gen: !!q.gen, reason: 'wrong', note: o.texts.join(' / ') + (r && r.changes ? ` (Claude: ${r.changes})` : ''), stem: PT(q, q.q).slice(0, 200), ts: Date.now() }, 'disputes');
     P.ui.obj = null; P.disputedNow++;
   }
-  else if (act === 'stop') { if (P.ctl) P.ctl.abort(); P.ui.grading = P.ui.probing = P.ui.diagnosing = false; if (P.ui.obj && P.ui.obj.busy) return; }
+  else if (act === 'stop') { if (P.ctl) P.ctl.abort(); P.ui.grading = P.ui.probing = P.ui.diagnosing = P.ui.explaining = false; if (P.ui.obj && P.ui.obj.busy) return; }
   else if (act === 'resume') { P.view = 'card'; renderControls(); if (!P.q && !P.recall) return next(); }
   else if (act === 'next') return next();
   renderCard();
@@ -1862,11 +1976,11 @@ function renderSide() {
     <p class="hint" style="margin:8px 0 0">맞힌 문제는 1·3·7·16일 간격으로, 틀린 문제는 곧바로 다시 나옵니다. 5문제마다 1번은 개념 하나를 무작위로 골라 기억을 되살립니다.${gens ? ` 지금까지 AI가 만든 문제 ${gens}개.` : ''}</p>`;
 
   const misses = counted().filter(isMiss);
-  const cc = { concept: 0, calc: 0, misread: 0, guess: 0, none: 0 };
-  for (const a of misses) cc[a.cause || 'none']++;
+  const cc = Object.fromEntries(Object.keys(CAUSE_LABELS).map(k => [k, 0]));
+  for (const a of misses) cc[CAUSE_LABELS[a.cause] ? a.cause : 'none']++;
   const max = Math.max(1, ...Object.values(cc));
   $('#causes').innerHTML = misses.length
-    ? Object.entries({ ...CAUSES, none: '원인 미선택' }).map(([k, l]) => `<div class="barrow"><span>${l}</span><span class="track"><span class="fill" style="width:${cc[k] / max * 100}%;${k === 'none' ? 'background:var(--idle)' : ''}"></span></span><span class="v">${cc[k]}</span></div>`).join('')
+    ? Object.entries(CAUSE_LABELS).filter(([k]) => k !== 'dunno' || cc.dunno).map(([k, l]) => `<div class="barrow"><span>${l}</span><span class="track"><span class="fill" style="width:${cc[k] / max * 100}%;${k === 'none' ? 'background:var(--idle)' : ''}"></span></span><span class="v">${cc[k]}</span></div>`).join('')
     : '<p class="empty" style="margin:0">아직 틀린 문제가 없습니다. 틀린 문제의 원인을 고르면 여기에 쌓입니다.</p>';
 
   const mis = [...store.attempts.values()].filter(a => a.probe && a.probe.misconception).sort((x, y) => y.ts - x.ts).slice(0, 8);

@@ -5,6 +5,7 @@
 - 개념별 숙련도와 간격 복습으로 다음 문제를 고른다.
 - 객관식, 단답형(수·벡터·행렬을 유리수로 정확히 비교), 서술형을 낸다. 종이 풀이 사진도 올릴 수 있다.
 - 페이지 안의 Claude가 서술형 채점, 풀이에서 처음 틀린 단계 진단, 오답을 겨냥한 후속 문제, 정답·해설 이의 검토를 한다.
+- 모르는 문제는 "모르겠음"을 누르면 틀림으로 기록하고, 정답과 함께 Claude가 개념부터 단계별로 설명한다.
 - 코딩 과목은 코드 색칠(VS Code 색), 코드 편집기, 브라우저 안 실행(JavaScript, Python/Pyodide)과 출력 비교를 지원한다.
 - 풀이 기록은 아티팩트 db에 쌓여 다시 게시해도 남는다.
 
@@ -45,6 +46,10 @@ Windows는 `C:\Users\<이름>\.claude\skills\study-clinic`에 받는다. Claude 
 ## 피드백
 
 버그나 제안은 [Issues](https://github.com/Guardian38/humanLearningClinic/issues)에 남겨 주세요.
+
+## 기여자
+
+- [@blokey47](https://github.com/blokey47): "모르겠음" 버튼과 자세한 설명, Claude 호출 상태 안내, 출제 원칙의 일반화를 제안하고 처음 구현했다.
 
 ## 라이선스
 
