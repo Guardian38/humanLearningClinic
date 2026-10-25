@@ -39,6 +39,7 @@ Windows는 `C:\Users\<이름>\.claude\skills\study-clinic`에 받는다. Claude 
 | `assets/clinic_template.html` | 클리닉 엔진. 과목 데이터만 끼워 넣는다 |
 | `scripts/build_clinic.py` | `subject.json`을 검사하고 템플릿에 넣어 HTML을 만든다 |
 | `references/question-rules.md` | 출제 원칙(공통 규칙, 과목마다 정할 것, 피할 것) |
+| `examples/linear_algebra_make_subject.py` | 예시: 선형대수 ch1~2 문제 은행(68문항, sympy 검증 포함). 구조만 참고하고, 안의 `PROFILE`은 그 과목에서 정한 값이라 그대로 쓰지 않는다 |
 | `CHANGELOG.md` | 변경 내역(받은 피드백, 판단, 바뀐 것) |
 
 ## 피드백

@@ -2,3 +2,4 @@
 share/
 __pycache__/
 *.zip
+examples/subject.json
