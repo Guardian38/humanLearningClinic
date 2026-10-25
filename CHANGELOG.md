@@ -1,11 +1,16 @@
 # study-clinic 변경 내역
 
-저장소: https://github.com/Guardian38/humanLearningClinic. 피드백과 버그 보고는 Issues로 받는다. 새 항목은 날짜 절 맨 위에 넣는다.
+저장소: https://github.com/Guardian38/humanLearningClinic. 피드백과 버그 보고는 Issues로 받는다. 새 항목은 날짜 절 맨 위에 넣고, 아래 "아직 확인하지 못한 것"도 함께 고친다.
+
+## 아직 확인하지 못한 것
+
+- 코딩 과목 기능이 실제 claude.ai 아티팩트에서 동작하는지: Pyodide(Python 실행기) 내려받기, blob 웹 워커, highlight.js 불러오기. 로컬 브라우저에서는 모두 동작했다. 막히면 출력 비교 없이 채점은 계속되고, 색칠만 빠진다.
+- Node가 없는 컴퓨터에서는 JavaScript 문제의 의도한 출력(`run.out`)을 빌드가 검증하지 못해 직접 적어야 한다.
 
 ## 2026-10-25
 
 ### GitHub 공개
-- 공유 방식을 zip과 아티팩트 변경 내역 페이지에서 GitHub 저장소로 옮겼다. 피드백도 페이지 댓글 대신 Issues로 받는다.
+- 공유 방식을 zip과 아티팩트 변경 내역 페이지에서 GitHub 저장소로 옮겼다. 피드백도 페이지 댓글 대신 Issues로 받는다. 페이지에만 있던 "아직 확인하지 못한 것"을 이 문서로 옮기고, 페이지는 저장소로 안내하는 내용으로 바꿨다(페이지에 댓글은 없었다).
 - 개인 경로(특정 과목 폴더)를 가리키던 문장을 일반적인 설명으로 바꿨다.
 - README, MIT 라이선스 추가.
 - 예시 `examples/linear_algebra_make_subject.py`(선형대수 ch1~2, 68문항) 추가. 실행하면 같은 폴더에 `subject.json`이 생기며 저장소에서는 제외한다. 원본은 사용자의 선형대수 폴더에 있어서, 원본을 고쳐도 예시에 자동으로 반영되지 않는다.
