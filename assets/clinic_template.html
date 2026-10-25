@@ -27,10 +27,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
   --claude: #7a4fd1; --claude-bg: #f2edfc;
   --font-body: "Noto Sans KR", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
-  /* 코드 색: VS Code Light+ */
+  /* 코드 색: VS Code Light+ (@@shared 구간은 build_summary.py도 읽어 요약 페이지에 넣는다) */
+  /* @@shared:code-vars-light */
   --code-bg: #ffffff; --code-fg: #000000;
   --tk-kw: #0000ff; --tk-ctl: #af00db; --tk-fn: #795e26; --tk-type: #267f99; --tk-str: #a31515; --tk-num: #098658;
   --tk-com: #008000; --tk-var: #001080; --tk-re: #811f3f; --tk-tag: #800000; --tk-attr: #e50000; --tk-sel: #800000; --tk-punc: #800000;
+  /* @@end */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -38,9 +40,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
     --border: #2e3745; --accent: #7fa8ee; --accent-soft: #1d2a40;
     --ok: #4cc493; --ok-bg: #15291f; --mid: #e3b25a; --mid-bg: #2c2414; --bad: #f06b6f; --bad-bg: #2e1a1c;
     --idle: #343d4b; --claude: #b39af0; --claude-bg: #241d38;
+    /* @@shared:code-vars-dark */
     --code-bg: #1e1e1e; --code-fg: #d4d4d4;
     --tk-kw: #569cd6; --tk-ctl: #c586c0; --tk-fn: #dcdcaa; --tk-type: #4ec9b0; --tk-str: #ce9178; --tk-num: #b5cea8;
     --tk-com: #6a9955; --tk-var: #9cdcfe; --tk-re: #d16969; --tk-tag: #569cd6; --tk-attr: #9cdcfe; --tk-sel: #d7ba7d; --tk-punc: #808080;
+    /* @@end */
     color-scheme: dark;
   }
 }
@@ -109,6 +113,7 @@ pre code { font-size: inherit; }
 :not(pre) > code { background: var(--surface-2); border-radius: 4px; padding: 0 4px; }
 pre.out.err { color: var(--bad); }
 /* 문법 색(highlight.js 클래스 → VS Code 토큰). ctl은 제어 키워드, tk-*는 엔진이 붙이는 이름 색 */
+/* @@shared:code-css */
 .hljs-keyword, .hljs-type, .hljs-literal, .hljs-doctag, .hljs-variable.language_ { color: var(--tk-kw); }
 .hljs-keyword.ctl, .hljs-meta, .hljs-meta .hljs-keyword { color: var(--tk-ctl); }
 .hljs-title, .hljs-title.function_, .hljs-built_in, .hljs-section, .tk-fn { color: var(--tk-fn); }
@@ -124,6 +129,7 @@ pre.out.err { color: var(--bad); }
 .hljs-tag .hljs-string { color: var(--tk-str); }
 .hljs-selector-tag, .hljs-selector-class, .hljs-selector-id, .hljs-selector-pseudo, .hljs-selector-attr { color: var(--tk-sel); }
 .hljs-subst, .hljs-operator, .hljs-punctuation { color: var(--code-fg); }
+/* @@end */
 /* 코드 답안 편집기: 투명한 textarea 밑에 색칠한 pre를 겹친다 */
 .ed { position: relative; border: 1px solid var(--border); border-radius: 8px; background: var(--code-bg); overflow: hidden; }
 .ed:focus-within { border-color: var(--accent); }
@@ -340,19 +346,8 @@ function richText(s) {
 /* ---------- 코드: 문법 색칠, 답안 편집기, 실행과 출력 비교 ---------- */
 // 과목 프로필 code: {lang: highlight.js 언어 이름, extra: [더 불러올 언어], run: RUNNERS의 키 또는 null, indent: 들여쓰기 칸 수}
 const CODE = PROFILE.code || null;
+// @@shared:code-js (build_summary.py가 요약 페이지에도 넣는다)
 const HLJS = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/';
-let hlReady = false;
-if (CODE) {
-  const s = document.createElement('script');
-  s.src = HLJS + 'highlight.min.js';
-  s.onload = () => {
-    // 기본 묶음에 없는 언어만 따로 불러온다
-    const more = [].concat(CODE.lang || [], CODE.extra || []).filter(l => !window.hljs.getLanguage(l));
-    Promise.all(more.map(l => new Promise(res => { const x = document.createElement('script'); x.src = `${HLJS}languages/${l}.min.js`; x.onload = x.onerror = res; document.head.appendChild(x); })))
-      .then(() => { hlReady = true; hlIn(document.body); });
-  };
-  document.head.appendChild(s);
-}
 // VS Code는 제어 흐름 키워드를 다른 색(보라)으로 칠한다
 const CTL_KW = new Set('if else elif for while do switch case default break continue return try except catch finally throw raise import from export with yield await goto pass match as in del assert'.split(' '));
 // 이 언어들은 태그·속성 밖의 글자를 이름으로 보지 않는다
@@ -374,6 +369,19 @@ function markIdents(box) {
     frag.append(t.slice(i));
     n.replaceWith(frag);
   }
+}
+// @@end
+let hlReady = false;
+if (CODE) {
+  const s = document.createElement('script');
+  s.src = HLJS + 'highlight.min.js';
+  s.onload = () => {
+    // 기본 묶음에 없는 언어만 따로 불러온다
+    const more = [].concat(CODE.lang || [], CODE.extra || []).filter(l => !window.hljs.getLanguage(l));
+    Promise.all(more.map(l => new Promise(res => { const x = document.createElement('script'); x.src = `${HLJS}languages/${l}.min.js`; x.onload = x.onerror = res; document.head.appendChild(x); })))
+      .then(() => { hlReady = true; hlIn(document.body); });
+  };
+  document.head.appendChild(s);
 }
 function hlCode(text, lang) {
   lang = lang || (CODE && CODE.lang);
