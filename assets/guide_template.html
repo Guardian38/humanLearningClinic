@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>@@TITLE@@</title>
+<script>
+// 수식: 클리닉과 같은 MathJax. 단원은 처음 열 때 그린다(숨긴 단원은 크기를 잴 수 없어서)
+window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] }, svg: { fontCache: 'global' },
+  startup: { typeset: false, ready() { MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => window.G && G.typesetShown()).catch(() => {}); } } };
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+<style>
+/* 이해 가이드: 단원 하나씩 보여 주는 한 장짜리 페이지. 개념 절(h2/h3의 data-c)은 클리닉과 같은 개념 id를 쓴다 */
+:root {
+  --bg: #f7f8fa; --surface: #ffffff; --surface-2: #f1f4f8; --fg: #1c2230; --muted: #5d6779;
+  --border: #d9dfe8; --accent: #2557a7; --accent-soft: #e6eefa;
+  --c1: #2563c9;   /* 파랑: 주 대상(모델, 부류 A) */
+  --c2: #e07a1f;   /* 주황: 비교 대상(데이터, 부류 B) */
+  --c3: #1f9a6a;   /* 초록: 정답, 좋음 */
+  --c4: #d0393e;   /* 빨강: 오차, 경고 */
+  --c5: #7b4fc9;   /* 보라: 보조 */
+  --grid: #e3e7ee; --axis: #8a93a3;
+  --idea-bg: #eef4ff;  --idea-bd: #9dbbef;
+  --pit-bg: #fff3f2;   --pit-bd: #f0b0ac;
+  --mine-bg: #f5f1ff;  --mine-bd: #c3b2ef;
+  --fix-bg: #fff8e5;   --fix-bd: #ecd189;  --fix-fg: #8a6500;
+  --ans-bg: #eef9f3;   --ans-bd: #a6dbbf;
+  --lab-bg: #ffffff;   --lab-bd: #b9c6da;
+  --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 2px 8px rgba(20, 30, 50, .05);
+/*@@CODE_VARS_LIGHT@@*/
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --surface: #1a1f27; --surface-2: #222833; --fg: #e4e8ef; --muted: #9aa4b5;
+    --border: #2f3744; --accent: #7fa8ee; --accent-soft: #1e2a3f;
+    --c1: #6b9ef0; --c2: #f0a052; --c3: #4cc493; --c4: #f06b6f; --c5: #a98bf0;
+    --grid: #2a313c; --axis: #6f7a8c;
+    --idea-bg: #18233a; --idea-bd: #34508a; --pit-bg: #2e1b1d; --pit-bd: #7a3a3d;
+    --mine-bg: #231d36; --mine-bd: #54458a; --fix-bg: #2d2716; --fix-bd: #7a6630; --fix-fg: #e0c060;
+    --ans-bg: #16291f; --ans-bd: #2f6a4c; --lab-bg: #1a1f27; --lab-bd: #3a4556;
+    --shadow: none;
+/*@@CODE_VARS_DARK@@*/
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #1a1f27; --surface-2: #222833; --fg: #e4e8ef; --muted: #9aa4b5;
+  --border: #2f3744; --accent: #7fa8ee; --accent-soft: #1e2a3f;
+  --c1: #6b9ef0; --c2: #f0a052; --c3: #4cc493; --c4: #f06b6f; --c5: #a98bf0;
+  --grid: #2a313c; --axis: #6f7a8c;
+  --idea-bg: #18233a; --idea-bd: #34508a; --pit-bg: #2e1b1d; --pit-bd: #7a3a3d;
+  --mine-bg: #231d36; --mine-bd: #54458a; --fix-bg: #2d2716; --fix-bd: #7a6630; --fix-fg: #e0c060;
+  --ans-bg: #16291f; --ans-bd: #2f6a4c; --lab-bg: #1a1f27; --lab-bd: #3a4556;
+  --shadow: none;
+/*@@CODE_VARS_DARK@@*/
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "Pretendard", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+  font-size: 16px; line-height: 1.75; word-break: keep-all; overflow-wrap: anywhere;
+}
+a { color: var(--accent); }
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 80px; }
+
+/* 상단 바 */
+.topbar {
+  position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px); border-bottom: 1px solid var(--border);
+}
+.topbar .inner { max-width: 920px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; }
+.topbar .home { font-weight: 700; text-decoration: none; color: var(--fg); }
+.topbar .units { display: flex; gap: 4px; flex-wrap: wrap; }
+.topbar .units a {
+  text-decoration: none; font-size: 13px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.topbar .units a.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.topbar .tools { margin-left: auto; display: flex; gap: 6px; }
+.topbar .tools a, .topbar .tools button { font-size: 13px; }
+.topbar .tools a { text-decoration: none; border: 1px solid var(--border); border-radius: 7px; padding: 4px 11px; background: var(--surface-2); color: var(--fg); }
+
+header.hero { padding: 32px 0 8px; }
+.hero .kicker { color: var(--muted); font-size: 14px; letter-spacing: .04em; }
+.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+.hero p { color: var(--muted); margin: 0; }
+@media (max-width: 640px) { .hero h1 { font-size: 24px; } }
+
+nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; margin: 20px 0; }
+nav.toc b { font-size: 14px; }
+nav.toc ol { list-style: none; margin: 6px 0 0; padding-left: 4px; columns: 2; column-gap: 28px; font-size: 14.5px; }
+@media (max-width: 640px) { nav.toc ol { columns: 1; } }
+
+h2 { font-size: 23px; margin: 48px 0 12px; padding-top: 8px; border-top: 2px solid var(--border); scroll-margin-top: 60px; }
+h3 { font-size: 18px; margin: 28px 0 8px; scroll-margin-top: 60px; }
+h2.flash, h3.flash { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+p { margin: 8px 0; }
+ul, ol { padding-left: 22px; }
+li { margin: 3px 0; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: .92em; }
+pre.code { background: var(--code-bg, var(--surface-2)); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; overflow-x: auto; line-height: 1.55; }
+pre.code code { background: none; padding: 0; font-family: Consolas, "D2Coding", monospace; font-size: 14px; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 24px 0; }
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; }
+
+/* 설명 상자들 */
+.box { border: 1px solid; border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+.box > .tag { display: inline-block; font-size: 12.5px; font-weight: 700; letter-spacing: .03em; margin-bottom: 2px; }
+.idea  { background: var(--idea-bg); border-color: var(--idea-bd); }
+.idea > .tag { color: var(--accent); }
+.pit   { background: var(--pit-bg); border-color: var(--pit-bd); }
+.pit > .tag { color: var(--c4); }
+.mine  { background: var(--mine-bg); border-color: var(--mine-bd); }
+.mine > .tag { color: var(--c5); }
+.mine blockquote { margin: 6px 0; padding: 4px 12px; border-left: 3px solid var(--mine-bd); color: var(--fg); font-style: normal; }
+.fix   { background: var(--fix-bg); border-color: var(--fix-bd); }
+.fix > .tag { color: var(--fix-fg); }
+.ans   { background: var(--ans-bg); border-color: var(--ans-bd); }
+.ans > .tag { color: var(--c3); }
+.def { margin: 10px 0; padding: 6px 14px; border-left: 3px solid var(--accent); background: var(--surface); }
+.def .ref, .ref { color: var(--muted); font-size: 13px; }
+.formula { background: var(--surface); border: 1px dashed var(--border); border-radius: 8px; padding: 8px 14px; margin: 10px 0; overflow-x: auto; }
+.oneline { font-size: 18px; font-weight: 700; margin: 10px 0 4px; }
+
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 14.5px; }
+th, td { border: 1px solid var(--border); padding: 6px 9px; text-align: left; vertical-align: top; }
+th { background: var(--surface-2); }
+.tablewrap { overflow-x: auto; }
+
+/* 실습 */
+.lab { background: var(--lab-bg); border: 1.5px solid var(--lab-bd); border-radius: 12px; padding: 14px 16px; margin: 18px 0; box-shadow: var(--shadow); }
+.lab > .tag { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--surface); background: var(--accent); padding: 1px 9px; border-radius: 999px; }
+.lab h4 { margin: 6px 0 4px; font-size: 17px; }
+.lab .how { color: var(--muted); font-size: 14px; margin: 0 0 8px; }
+.lab canvas { width: 100%; display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; touch-action: none; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin: 10px 0; font-size: 14.5px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; }
+.controls input[type=range] { width: 150px; accent-color: var(--accent); }
+.controls input[type=number] { width: 70px; }
+input, select, button { font: inherit; font-size: 14px; color: var(--fg); }
+input[type=number], input[type=text], select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+button { background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 4px 11px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.readout { font-family: Consolas, "D2Coding", monospace; font-size: 14px; background: var(--surface-2); border-radius: 8px; padding: 8px 12px; margin: 8px 0; white-space: pre-wrap; line-height: 1.6; }
+.readout .good { color: var(--c3); font-weight: 700; }
+.readout .bad { color: var(--c4); font-weight: 700; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); margin: 6px 0; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+.try { font-size: 14.5px; margin: 8px 0 0; padding-left: 20px; }
+.try li::marker { color: var(--accent); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+
+/* 자가 점검 */
+.quiz-summary { font-size: 14.5px; color: var(--muted); margin: 6px 0 12px; }
+.q { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+.q.ok { border-left: 4px solid var(--c3); }
+.q.again { border-left: 4px solid var(--c4); }
+.q .qtext { font-weight: 600; }
+.unit { counter-reset: q; }
+.q .qtext::before { counter-increment: q; content: counter(q) ". "; color: var(--muted); }
+.q .a { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.q .qbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.mcq ol { list-style: none; padding: 0; margin: 8px 0 0; }
+.mcq li { border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; margin: 5px 0; cursor: pointer; }
+.mcq li:hover { border-color: var(--accent); }
+.mcq li.right { border-color: var(--c3); background: var(--ans-bg); }
+.mcq li.wrong { border-color: var(--c4); background: var(--pit-bg); }
+.mcq .explain { display: none; margin-top: 8px; font-size: 15px; }
+.mcq.done .explain { display: block; }
+
+/* 첫 화면 */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin: 18px 0; }
+.card { display: block; text-decoration: none; color: var(--fg); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+.card:hover { border-color: var(--accent); }
+.card .wk { font-size: 13px; color: var(--accent); font-weight: 700; }
+.card h3 { margin: 2px 0 6px; font-size: 17px; }
+.card p { margin: 0; font-size: 14px; color: var(--muted); }
+.card .labs { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.card .prog { margin-top: 6px; font-size: 13px; color: var(--c3); }
+
+.foot-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+/*@@CODE_CSS@@*/
+</style>
+<script>
+/* 공통 도구: 단원 전환, 목차, 테마, 자가 점검, 수식, 캔버스 실습용 Plot과 다시 그리기 등록(G.lab) */
+(function () {
+  const CONFIG = /*@@CONFIG@@*/null;
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(CONFIG.key + ":" + k); return v === null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(CONFIG.key + ":" + k, v); } catch (e) { /* 저장 불가 환경 */ } },
+  };
+
+  const G = {
+    CONFIG, store,
+    css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); },
+    fmt(x, d = 3) {
+      if (!isFinite(x)) return x > 0 ? "∞" : (x < 0 ? "−∞" : "NaN");
+      return Number(x).toFixed(d).replace(/^-/, "−");
+    },
+    $(sel, root = document) { return root.querySelector(sel); },
+    $$(sel, root = document) { return Array.from(root.querySelectorAll(sel)); },
+    labs: [],
+    /** 다시 그리기 함수를 등록. 테마·창 크기·단원 전환 때 다시 부른다 */
+    lab(draw) { G.labs.push(draw); try { draw(); } catch (e) { console.error(e); } return draw; },
+    redrawAll() { G.labs.forEach((f) => { try { f(); } catch (e) { console.error(e); } }); },
+    /** 슬라이더 값 표시 연결: <input id=x> 와 <span data-for=x>. data-fmt="log"면 10의 거듭제곱(최솟값은 "0 (끔)") */
+    bindOut(root = document) {
+      G.$$("input[type=range]", root).forEach((inp) => {
+        const out = G.$(`[data-for="${inp.id}"]`, root);
+        if (!out) return;
+        const upd = () => {
+          if (inp.dataset.fmt !== "log") { out.textContent = inp.value; return; }
+          out.textContent = +inp.value <= +inp.min ? "0 (끔)" : Math.pow(10, +inp.value).toExponential(1).replace("e", "×10^");
+        };
+        inp.addEventListener("input", upd); upd();
+      });
+    },
+    rand(seed) {  // 재현 가능한 난수 (mulberry32)
+      let a = seed >>> 0;
+      return function () {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    },
+    gauss(rng) { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); },
+    /** 두 #rrggbb 색 사이를 t∈[0,1]로 섞는다 (히트맵용) */
+    mix(c1, c2, t) {
+      const p = (c) => { const m = c.replace("#", ""); return [0, 2, 4].map((i) => parseInt(m.substr(i, 2), 16)); };
+      const a = p(c1), b = p(c2);
+      return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
+    },
+  };
+
+  /** 캔버스 좌표계 헬퍼 */
+  class Plot {
+    constructor(canvas, view) {
+      this.cv = canvas; this.view = Object.assign({ xmin: -1, xmax: 1, ymin: -1, ymax: 1, pad: 28 }, view);
+      this.setup();
+    }
+    setup() {
+      const cv = this.cv, dpr = window.devicePixelRatio || 1;
+      const w = cv.clientWidth || 600, h = +(cv.dataset.h || 320);
+      cv.style.height = h + "px";
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+      this.ctx = cv.getContext("2d"); this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.w = w; this.h = h;
+    }
+    X(x) { const v = this.view; return v.pad + (x - v.xmin) / (v.xmax - v.xmin) * (this.w - 2 * v.pad); }
+    Y(y) { const v = this.view; return this.h - v.pad - (y - v.ymin) / (v.ymax - v.ymin) * (this.h - 2 * v.pad); }
+    ix(px) { const v = this.view; return v.xmin + (px - v.pad) / (this.w - 2 * v.pad) * (v.xmax - v.xmin); }
+    iy(py) { const v = this.view; return v.ymin + (this.h - v.pad - py) / (this.h - 2 * v.pad) * (v.ymax - v.ymin); }
+    clear() {
+      // 숨긴 단원에서 만든 캔버스는 처음 보일 때 실제 폭으로 다시 맞춘다
+      if (this.cv.clientWidth && Math.abs(this.cv.clientWidth - this.w) > 1) this.setup();
+      this.ctx.clearRect(0, 0, this.w, this.h);
+    }
+    grid(step = 1, labels = true) {
+      const c = this.ctx, v = this.view;
+      c.save(); c.strokeStyle = G.css("--grid"); c.lineWidth = 1;
+      for (let x = Math.ceil(v.xmin / step) * step; x <= v.xmax + 1e-9; x += step) { c.beginPath(); c.moveTo(this.X(x), this.Y(v.ymin)); c.lineTo(this.X(x), this.Y(v.ymax)); c.stroke(); }
+      for (let y = Math.ceil(v.ymin / step) * step; y <= v.ymax + 1e-9; y += step) { c.beginPath(); c.moveTo(this.X(v.xmin), this.Y(y)); c.lineTo(this.X(v.xmax), this.Y(y)); c.stroke(); }
+      c.strokeStyle = G.css("--axis"); c.lineWidth = 1.3;
+      if (v.ymin <= 0 && v.ymax >= 0) { c.beginPath(); c.moveTo(this.X(v.xmin), this.Y(0)); c.lineTo(this.X(v.xmax), this.Y(0)); c.stroke(); }
+      if (v.xmin <= 0 && v.xmax >= 0) { c.beginPath(); c.moveTo(this.X(0), this.Y(v.ymin)); c.lineTo(this.X(0), this.Y(v.ymax)); c.stroke(); }
+      if (labels) {
+        c.fillStyle = G.css("--muted"); c.font = "11px sans-serif"; c.textAlign = "center"; c.textBaseline = "top";
+        const y0 = (v.ymin <= 0 && v.ymax >= 0) ? this.Y(0) + 3 : this.h - v.pad + 3;
+        for (let x = Math.ceil(v.xmin / step) * step; x <= v.xmax + 1e-9; x += step) if (Math.abs(x) > 1e-9) c.fillText(+x.toFixed(2), this.X(x), y0);
+        c.textAlign = "right"; c.textBaseline = "middle";
+        const x0 = (v.xmin <= 0 && v.xmax >= 0) ? this.X(0) - 4 : v.pad - 4;
+        for (let y = Math.ceil(v.ymin / step) * step; y <= v.ymax + 1e-9; y += step) if (Math.abs(y) > 1e-9) c.fillText(+y.toFixed(2), x0, this.Y(y));
+      }
+      c.restore();
+    }
+    path(pts, color, width = 2, dash) {
+      const c = this.ctx; c.save(); c.strokeStyle = color; c.lineWidth = width; if (dash) c.setLineDash(dash);
+      c.beginPath(); let started = false;
+      for (const [x, y] of pts) {
+        if (!isFinite(y)) { started = false; continue; }
+        const py = Math.max(-1e4, Math.min(1e4, this.Y(y)));
+        if (!started) { c.moveTo(this.X(x), py); started = true; } else c.lineTo(this.X(x), py);
+      }
+      c.stroke(); c.restore();
+    }
+    fn(f, color, width = 2, n = 300, dash) {
+      const v = this.view, pts = [];
+      for (let i = 0; i <= n; i++) { const x = v.xmin + (v.xmax - v.xmin) * i / n; pts.push([x, f(x)]); }
+      this.ctx.save(); this.ctx.beginPath(); this.ctx.rect(v.pad, v.pad, this.w - 2 * v.pad, this.h - 2 * v.pad); this.ctx.clip();
+      this.path(pts, color, width, dash); this.ctx.restore();
+    }
+    dot(x, y, r, fill, stroke) {
+      const c = this.ctx; c.beginPath(); c.arc(this.X(x), this.Y(y), r, 0, 2 * Math.PI);
+      if (fill) { c.fillStyle = fill; c.fill(); }
+      if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1.5; c.stroke(); }
+    }
+    arrow(x0, y0, x1, y1, color, width = 2.5) {
+      const c = this.ctx, X0 = this.X(x0), Y0 = this.Y(y0), X1 = this.X(x1), Y1 = this.Y(y1);
+      const a = Math.atan2(Y1 - Y0, X1 - X0), L = 10;
+      c.save(); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = width;
+      c.beginPath(); c.moveTo(X0, Y0); c.lineTo(X1, Y1); c.stroke();
+      c.beginPath(); c.moveTo(X1, Y1); c.lineTo(X1 - L * Math.cos(a - .4), Y1 - L * Math.sin(a - .4)); c.lineTo(X1 - L * Math.cos(a + .4), Y1 - L * Math.sin(a + .4)); c.closePath(); c.fill();
+      c.restore();
+    }
+    text(s, x, y, color, opt = {}) {
+      const c = this.ctx; c.save(); c.fillStyle = color || G.css("--fg"); c.font = (opt.font || "13px sans-serif");
+      c.textAlign = opt.align || "left"; c.textBaseline = opt.base || "middle";
+      c.fillText(s, opt.px ? x : this.X(x), opt.px ? y : this.Y(y)); c.restore();
+    }
+    /** 마우스/터치 좌표를 세계 좌표로 */
+    pointer(ev) {
+      const r = this.cv.getBoundingClientRect();
+      const t = ev.touches ? ev.touches[0] : ev;
+      const px = t.clientX - r.left, py = t.clientY - r.top;
+      return { x: this.ix(px), y: this.iy(py), px, py };
+    }
+  }
+  G.Plot = Plot;
+
+  /* ---------- 수식: 보이는 단원만, 처음 한 번 ---------- */
+  const typeset = new Set();
+  let mjChain = Promise.resolve();
+  G.typesetShown = function () {
+    const sec = G.$(".unit:not([hidden])");
+    const MJ = window.MathJax;
+    if (!sec || typeset.has(sec.id) || !(MJ && MJ.typesetPromise)) return;
+    typeset.add(sec.id);
+    mjChain = mjChain.then(() => MJ.typesetPromise([sec])).catch(() => {});
+  };
+
+  /* ---------- 단원 전환 ---------- */
+  const unitLabel = (u) => (CONFIG.unitFormat || "{u}").replace("{u}", u.key);
+  function show(target) {
+    // target: 단원 id(u-키), 절 id, 개념(c-개념id) 중 하나. 못 찾으면 첫 화면
+    let el = null;
+    if (target.startsWith("c-")) {
+      const cid = target.slice(2);
+      el = G.$$("[data-c]").find((e) => e.dataset.c.split(/\s+/).includes(cid)) || null;
+    } else if (target) el = document.getElementById(target);
+    const sec = el ? (el.classList.contains("unit") ? el : el.closest(".unit")) : G.$("#home");
+    G.$$(".unit").forEach((s) => { s.hidden = s !== sec; });
+    G.$$(".topbar .units a").forEach((a) => a.classList.toggle("on", a.dataset.u === sec.dataset.unit));
+    document.title = sec.dataset.unit ? `${unitLabel(CONFIG.units.find((u) => u.key === sec.dataset.unit))} · ${CONFIG.title}` : CONFIG.title;
+    G.redrawAll(); G.typesetShown();
+    if (el && el !== sec) { el.scrollIntoView(); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+    else window.scrollTo(0, 0);
+    if (sec.id === "home") renderCards();
+  }
+  const route = () => show(decodeURIComponent(location.hash.slice(1)));
+
+  function buildTopbar() {
+    const bar = document.createElement("div");
+    bar.className = "topbar";
+    const clinic = CONFIG.clinic ? `<a href="${CONFIG.clinic}" target="_blank" rel="noopener" title="약점 클리닉을 새 탭에서 엽니다">약점 클리닉 ↗</a>` : "";
+    bar.innerHTML = `<div class="inner">
+      <a class="home" href="#home">📘 ${CONFIG.title}</a>
+      <div class="units">${CONFIG.units.map((u) => `<a href="#u-${u.key}" data-u="${u.key}" title="${u.title}">${unitLabel(u)}</a>`).join("")}</div>
+      <div class="tools">${clinic}<button class="theme" type="button" title="밝게/어둡게">🌓 테마</button></div></div>`;
+    document.body.prepend(bar);
+    const saved = store.get("theme", "");
+    if (saved) document.documentElement.dataset.theme = saved;
+    bar.querySelector(".theme").addEventListener("click", () => {
+      const isDark = document.documentElement.dataset.theme === "dark" ||
+        (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+      const next = isDark ? "light" : "dark";
+      document.documentElement.dataset.theme = next; store.set("theme", next); G.redrawAll();
+    });
+  }
+
+  function buildTocs() {
+    G.$$(".unit[data-unit]").forEach((sec) => {
+      if (!sec.dataset.unit) return;
+      const toc = G.$("nav.toc", sec);
+      if (!toc) return;
+      const items = G.$$("h2[id]", sec).map((h) => `<li><a href="#${h.id}">${h.textContent}</a></li>`).join("");
+      toc.innerHTML = `<b>이 단원에서</b><ol>${items}</ol>`;
+    });
+  }
+
+  function buildFootNavs() {
+    CONFIG.units.forEach((u, i) => {
+      const sec = document.getElementById("u-" + u.key);
+      if (!sec) return;
+      const prev = CONFIG.units[i - 1], next = CONFIG.units[i + 1];
+      const nav = document.createElement("div");
+      nav.className = "foot-nav";
+      nav.innerHTML = `<span>${prev ? `<a href="#u-${prev.key}">← ${unitLabel(prev)} ${prev.title}</a>` : `<a href="#home">← 첫 화면</a>`}</span>
+        <span>${next ? `<a href="#u-${next.key}">${unitLabel(next)} ${next.title} →</a>` : `<a href="#home">첫 화면 →</a>`}</span>`;
+      sec.appendChild(nav);
+    });
+  }
+
+  function renderCards() {
+    const box = G.$("#cards");
+    if (!box) return;
+    box.innerHTML = CONFIG.units.map((u) => {
+      const prog = store.get(`progress:${u.key}`, "");
+      return `<a class="card" href="#u-${u.key}"><div class="wk">${unitLabel(u)}</div><h3>${u.title}</h3>${u.summary ? `<p>${u.summary}</p>` : ""}${u.labs ? `<div class="labs">🧪 ${u.labs}</div>` : ""}${prog ? `<div class="prog">자가 점검 ${prog} 이해함</div>` : ""}</a>`;
+    }).join("");
+  }
+
+  /* ---------- 자가 점검 ---------- */
+  function buildQuiz(sec) {
+    const page = sec.dataset.unit;
+    const qs = G.$$(".q", sec);
+    const summary = G.$(".quiz-summary", sec);
+    const update = () => {
+      if (!summary) return;
+      const ok = qs.filter((q) => q.classList.contains("ok")).length;
+      const again = qs.filter((q) => q.classList.contains("again")).length;
+      summary.textContent = `이해함 ${ok} · 다시 보기 ${again} · 전체 ${qs.length}문항 (표시는 이 브라우저에만 저장됩니다)`;
+      store.set(`progress:${page}`, `${ok}/${qs.length}`);
+    };
+    qs.forEach((q, idx) => {
+      const key = `quiz:${page}:${q.dataset.id || String(idx + 1)}`;
+      const setState = (v) => { q.classList.remove("ok", "again"); if (v) q.classList.add(v); store.set(key, v); update(); };
+      if (q.classList.contains("mcq")) {
+        const ans = +q.dataset.answer;
+        G.$$("li", q).forEach((li, i) => li.addEventListener("click", () => {
+          if (q.classList.contains("done")) return;
+          q.classList.add("done");
+          li.classList.add(i === ans ? "right" : "wrong");
+          G.$$("li", q)[ans].classList.add("right");
+          setState(i === ans ? "ok" : "again");
+        }));
+        const reset = document.createElement("button"); reset.type = "button"; reset.textContent = "다시 풀기";
+        reset.addEventListener("click", () => { q.classList.remove("done"); G.$$("li", q).forEach((l) => l.classList.remove("right", "wrong")); setState(""); });
+        const bar = document.createElement("div"); bar.className = "qbar"; bar.appendChild(reset); q.appendChild(bar);
+      } else {
+        const a = G.$(".a", q); if (a) a.hidden = true;
+        const bar = document.createElement("div"); bar.className = "qbar";
+        bar.innerHTML = `<button type="button" class="primary" data-act="show">답 보기</button><button type="button" data-act="ok">✔ 이해함</button><button type="button" data-act="again">↺ 다시 보기</button>`;
+        bar.addEventListener("click", (e) => {
+          const act = e.target.dataset.act; if (!act) return;
+          if (act === "show") { a.hidden = !a.hidden; e.target.textContent = a.hidden ? "답 보기" : "답 숨기기"; }
+          else setState(q.classList.contains(act) ? "" : act);
+        });
+        q.appendChild(bar);
+      }
+      const saved = store.get(key, "");
+      if (saved) q.classList.add(saved);
+    });
+    update();
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    buildTopbar(); buildTocs(); buildFootNavs();
+    G.$$(".unit[data-unit]").forEach((s) => { if (s.dataset.unit) buildQuiz(s); });
+    G.bindOut(); route();
+  });
+  window.addEventListener("hashchange", route);
+  let rt;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(G.redrawAll, 150); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", G.redrawAll);
+
+  window.G = G;
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+<section class="unit" id="home" data-unit="">
+<header class="hero">
+  <div class="kicker">@@KICKER@@</div>
+  <h1>@@TITLE@@</h1>
+  <p>@@LEDE@@</p>
+</header>
+<div class="cards" id="cards"></div>
+<!--@@HOME@@-->
+</section>
+<!--@@UNITS@@-->
+</div>
+<!--@@CODE_JS@@-->
+</body>
+</html>
