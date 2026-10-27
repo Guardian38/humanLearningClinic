@@ -332,8 +332,27 @@ function plain(html) {
   return d.textContent.replace(/\s+/g, ' ').trim().replace(/\s*\u0000(\d+)\u0000\s*/g, (m, k) => '\n```' + keep[k][0] + '\n' + keep[k][1] + '\n```\n').trim();
 }
 // 텍스트(AI 출제·수정 문제)의 코드: ```로 감싼 블록과 `인라인 코드`만 살리고 나머지는 이스케이프한다
+// 줄바꿈(\n)은 <br>로 그리고, 문제 은행과 같은 꾸밈 태그(<br>, <b>, <i>, <u>, <sub>, <sup>)는 AI가 써도 살린다
 const unesc = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-const inlineCode = s => esc(s).replace(/`([^`\n]+)`/g, '<code>$1</code>');
+const SAFE_TAG = /&lt;(\/?)(b|i|u|sub|sup|br)\s*\/?&gt;/gi;
+const inlineCode = s => esc(s).replace(SAFE_TAG, (m, c, t) => `<${c}${t.toLowerCase()}>`).replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
+// 개념 노트(평문): 줄바꿈이 있으면 살리고, 없으면 괄호·따옴표 밖의 문장 끝(". ")에서 줄을 나눈다. 줄 앞의 짧은 "이름:"은 굵게
+function noteHTML(s) {
+  s = String(s == null ? '' : s);
+  if (!s.includes('\n')) {
+    let out = '', depth = 0, quote = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      out += c;
+      if ('([‘“'.includes(c)) depth++;
+      else if (')]’”'.includes(c)) depth = Math.max(0, depth - 1);
+      else if (c === "'") quote = !quote;
+      else if (c === '.' && !depth && !quote && s[i + 1] === ' ' && !/\d/.test(s[i - 1] || '')) { out += '\n'; i++; }
+    }
+    s = out;
+  }
+  return s.trim().split('\n').map(line => esc(line).replace(/^([^:(']{1,20}(?:\([^)]*\))?): /, '<b>$1:</b> ')).join('<br>');
+}
 function richText(s) {
   // 규칙을 어기고 <pre>, <code>를 쓴 경우도 코드로 읽는다
   s = String(s == null ? '' : s)
@@ -1248,7 +1267,7 @@ function explainHTML(q, a) {
     h += list('풀이 순서', x.steps, 'ol') + list('헷갈리기 쉬운 점', x.traps, 'ul');
     if (x.remember) h += `<p style="margin:10px 0 0"><b>기억할 것</b> ${richText(x.remember)}</p>`;
   } else if (u.explaining) h += `<span class="think">Claude가 설명을 쓰는 중입니다…</span> <button type="button" class="btn small" data-act="stop">취소</button>`;
-  else if (!aiOn()) h += `<p style="margin:0 0 6px">Claude를 쓸 수 없어 강의 노트 요약을 대신 보여 줍니다.</p><div>${esc(CONCEPTS[q.concept][1])}</div>`;
+  else if (!aiOn()) h += `<p style="margin:0 0 6px">Claude를 쓸 수 없어 강의 노트 요약을 대신 보여 줍니다.</p><div>${noteHTML(CONCEPTS[q.concept][1])}</div>`;
   else h += `<p style="margin:0 0 8px">정답과 해설만으로 이해가 안 되면 Claude가 개념부터 단계별로 설명합니다.</p><button type="button" class="btn claude solid" data-act="explain">자세한 설명 보기</button>`;
   if (u.explainErr) h += `<p class="err" style="margin:8px 0 0">${esc(u.explainErr)}</p>`;
   return h + '</div>';
@@ -1296,7 +1315,7 @@ function recallBody(cid) {
   }
   const mine = a ? a.answer : (u.draft || '').trim();
   if (mine) h += `<p class="hint" style="margin:0 0 4px">내가 떠올린 것</p><div class="panel" style="margin-top:0;white-space:pre-wrap">${esc(mine)}</div>`;
-  h += `<div class="panel"><span class="lbl">노트 요약</span>${esc(note)}</div>`;
+  h += `<div class="panel"><span class="lbl">노트 요약</span>${noteHTML(note)}</div>`;
   const labels = { correct: '잘 기억남', partial: '흐릿함', wrong: '잊어버림' };
   if (!a) h += `<div class="row"><span class="hint">얼마나 기억났나요?</span>${Object.entries(labels).map(([k, l]) => `<button type="button" class="btn small" data-act="rate" data-v="${k}">${l}</button>`).join('')}</div>`;
   else h += `<div class="row"><span class="hint">기록됨: <b>${labels[verdictOf(a)]}</b></span>${Object.entries(labels).filter(([k]) => k !== verdictOf(a)).map(([k, l]) => `<button type="button" class="btn small" data-act="override" data-v="${k}">${l}로 바꾸기</button>`).join('')}</div>`;
