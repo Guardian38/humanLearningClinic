@@ -1080,7 +1080,8 @@ function newAttempt(extra) {
     id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
     qid: q ? q.id : 'r:' + cid, concept: cid, unit: q ? q.u : unitOf(cid), kind: q ? q.t : 'recall',
     ts: Date.now(), cause: null, probe: null, hints: P.ui.hintsShown || 0,
-    secs: P.ui.t0 ? Math.round((Date.now() - P.ui.t0) / 1000) : null, ...extra
+    secs: P.ui.t0 ? Math.round((Date.now() - P.ui.t0) / 1000) : null,
+    ...(P.ui.qa && P.ui.qa.length ? { qa: P.ui.qa.slice() } : {}), ...extra
   };
   if (q && q.gen) a.gen = true;
   P.aid = a.id;
@@ -1096,6 +1097,7 @@ function syncDrafts() {
   const d = $('#disputeNote'); if (d) P.ui.dNote = d.value;
   const o = $('#objBox'); if (o) P.ui.objDraft = o.value;
   const sb = $('#shortBox'); if (sb) P.ui.shortDraft = sb.value;
+  const k = $('#askBox'); if (k) P.ui.askDraft = k.value;
 }
 
 /* ---------- 카드 조각 ---------- */
@@ -1359,6 +1361,27 @@ function objectionHTML(q, a) {
   return h + '</div>';
 }
 
+// Claude에게 질문: 답하기 전에는 문제의 표현·용어·조건만 풀어 주고, 답한 뒤에는 정답·풀이까지 자유롭게 묻는다.
+// 대화는 답하기 전에는 P.ui.qa에, 기록이 생기면 기록(qa)에 남는다
+const qaLog = () => { const a = cur(); return a ? (a.qa || (a.qa = [])) : (P.ui.qa || (P.ui.qa = [])); };
+function askHTML(q, a) {
+  const u = P.ui, log = a ? a.qa || [] : u.qa || [];
+  if (!u.askOpen && !log.length) return '';
+  let h = '<div class="panel claude"><span class="lbl">Claude에게 질문</span>';
+  if (!log.length) h += `<p style="margin:0 0 8px">${a ? '정답, 풀이, 내 답의 어디가 틀렸는지 등 이 문제에 대해 궁금한 것을 물어보세요.' : '문제의 표현이나 용어, 조건이 무슨 뜻인지 물어보세요. 아직 풀기 전이라 정답과 풀이는 알려 주지 않습니다.'}</p>`;
+  log.forEach(t => {
+    h += `<p style="margin:8px 0 0"><b>나:</b> ${esc(t.q)}</p>`;
+    if (t.a) h += `<div style="margin:6px 0 0"><b>Claude:</b> ${richText(t.a)}</div>`;
+  });
+  if (u.asking) h += `<div class="row"><span class="think">Claude가 답하는 중입니다…</span><button type="button" class="btn small" data-act="stop">취소</button></div>`;
+  else if (aiOn()) {
+    h += `<textarea id="askBox" style="min-height:60px;margin-top:10px" placeholder="${a ? '예: 왜 이 단계에서 이 성질을 쓰나요?' : '예: 여기서 말하는 ○○는 무슨 뜻인가요?'} (Ctrl+Enter로 보내기)">${esc(u.askDraft || '')}</textarea>
+      <div class="row"><button type="button" class="btn claude ${log.length ? '' : 'solid'}" data-act="asksend">질문하기</button>${log.length ? '' : '<button type="button" class="btn" data-act="askclose">닫기</button>'}</div>`;
+  }
+  if (u.askErr) h += `<p class="err" style="margin:8px 0 0">${esc(u.askErr)}</p>`;
+  return h + '</div>';
+}
+
 function renderCard() {
   if (P.view === 'summary') return renderSummary();
   const q = P.q, cid = P.recall;
@@ -1381,11 +1404,13 @@ function renderCard() {
     h += a && a.dunno ? dunnoBody(q, a) : q.t === 'mc' ? mcBody(q, a) : q.t === 'short' ? shortBody(q, a) : openBody(q, a);
     h += objectionHTML(q, a);
     h += disputeHTML(q);
+    h += askHTML(q, a);
   } else h += recallBody(cid);
+  const canAsk = q && aiOn() && !P.ui.askOpen && !(a ? a.qa || [] : P.ui.qa || []).length;
   const canDispute = q && !disputed(q.id) && !P.ui.disputeOpen;
   const canObject = canDispute && a && graded(a) && !P.ui.obj;
   const canDunno = q && !a && !disputed(q.id) && !P.ui.grading && !P.ui.running && !P.ui.selfGrade;
-  h += `<div class="row" style="margin-top:18px">${canObject ? '<button type="button" class="btn small ghost" data-act="oopen">정답·해설에 이의 제기</button>' : ''}${canDispute ? '<button type="button" class="btn small ghost" data-act="dopen">이 문제 빼기</button>' : ''}<span class="spacer"></span>${canDunno ? '<button type="button" class="btn" data-act="dunno" title="틀림으로 기록하고 정답과 자세한 설명을 봅니다">모르겠음</button>' : ''}<button type="button" class="btn ${a || (q && disputed(q.id)) ? 'primary' : ''}" data-act="next">${a || (q && disputed(q.id)) ? '다음 문제' : '건너뛰기'}</button></div>`;
+  h += `<div class="row" style="margin-top:18px">${canObject ? '<button type="button" class="btn small ghost" data-act="oopen">정답·해설에 이의 제기</button>' : ''}${canDispute ? '<button type="button" class="btn small ghost" data-act="dopen">이 문제 빼기</button>' : ''}${canAsk ? '<button type="button" class="btn small ghost" data-act="askopen">Claude에게 질문</button>' : ''}<span class="spacer"></span>${canDunno ? '<button type="button" class="btn" data-act="dunno" title="틀림으로 기록하고 정답과 자세한 설명을 봅니다">모르겠음</button>' : ''}<button type="button" class="btn ${a || (q && disputed(q.id)) ? 'primary' : ''}" data-act="next">${a || (q && disputed(q.id)) ? '다음 문제' : '건너뛰기'}</button></div>`;
   paint($('#card'), h);
 }
 
@@ -1606,6 +1631,60 @@ JSON 하나로만 답하라:
     P.ui.explaining = false; P.ui.explainErr = aiError(e) ? '설명을 받지 못했습니다. ' + aiError(e) : '';
   }
   renderCard();
+}
+
+/* ---------- Claude에게 질문 ---------- */
+// 답하기 전에는 정답·해설을 보내지 않는다(문제, 보기, 이미 본 힌트, 개념 노트만)
+function preContext(q) {
+  const [cname, note] = CONCEPTS[q.concept];
+  let s = `[문제] ${PT(q, q.q)}\n` + figText(q);
+  if (q.t === 'mc') s += `[보기]\n${q.o.map((o, i) => `${i + 1}. ${PT(q, o)}`).join('\n')}\n`;
+  const hs = (q.hints || []).slice(0, P.ui.hintsShown || 0);
+  if (hs.length) s += `[학생이 본 힌트] ${hs.map(x => PT(q, x)).join(' / ')}\n`;
+  return s + `[관련 개념: ${cname}] ${note}`;
+}
+function askPrompt(q, a, log, text) {
+  const x = a && a.explain;
+  const rule = a
+    ? '학생은 이미 답했고 정답과 해설(또는 모범 답안)을 봤다. 정답, 풀이, 학생 답의 맞고 틀린 곳 등 무엇이든 설명해도 된다. 정답이나 채점이 틀렸다는 주장이면 판단을 여기서 바꾸지 말고, 근거를 설명한 뒤 화면의 "정답·해설에 이의 제기"를 쓰라고 안내하라.'
+    : '학생은 아직 답하지 않았다. 정답, 정답 보기, 풀이의 핵심 단계나 결정적인 힌트는 절대 알려 주지 말고, 문제의 표현·용어·조건·기호가 무슨 뜻인지만 설명하라. 정답이나 풀이를 직접 물으면 먼저 풀어 보거나 힌트·"모르겠음"을 쓰라고 짧게 안내하라.';
+  const hist = log.filter(t => t.a).map(t => `학생${t.pre && a ? '(답하기 전)' : ''}: ${t.q}\nClaude: ${t.a}`).join('\n\n');
+  return `${ROLE}
+학생이 아래 문제에 대해 질문했다. ${rule}
+- 질문에 바로 답하고 짧게(대개 2~6문장) 쓴다. 코드나 계산은 한 단계씩 풀어 쓴다.
+- 강의 노트의 용어와 표기를 쓰고, 노트 범위 밖 내용은 꼭 필요할 때만 짧게 덧붙이며 범위 밖이라고 밝힌다.
+- ${MATH_RULE}
+
+${a ? context(q, a) : preContext(q)}${x ? `\n[학생이 읽은 설명] ${x.concept} / 기억할 것: ${x.remember}` : ''}
+${hist ? `\n[이전 대화]\n${hist}\n` : ''}
+[학생의 질문] ${text}
+
+학생에게 하는 답만 출력하라.`;
+}
+async function askClaude() {
+  const q = P.q, ui = P.ui; if (!q) return;
+  const text = (ui.askDraft || '').trim();
+  if (!text) { ui.askErr = '질문을 먼저 써 주세요.'; return renderCard(); }
+  const a = cur(), log = qaLog();
+  const prompt = askPrompt(q, a, log, text);
+  // 답을 기다리는 동안 학생이 제출하면 기록이 대화를 복사하므로, 같은 turn 객체에 답을 채운다
+  const turn = { q: text, a: '', pre: !a, ts: Date.now() };
+  log.push(turn);
+  const ctl = P.ctl = new AbortController();
+  ui.asking = true; ui.askErr = ''; ui.askDraft = ''; renderCard();
+  try {
+    const { text: ans } = await sample(prompt, { signal: ctl.signal, cache: false });
+    turn.a = String(ans || '').trim() || '(답이 비어 있습니다)';
+  } catch (e) {
+    turn.failed = true;
+    ui.askDraft = text; ui.askErr = aiError(e) ? '답을 받지 못했습니다. ' + aiError(e) : '';
+  }
+  ui.asking = false;
+  // 실패한 질문은 대화에서 빼고(입력칸에 되돌림), 이 질문을 가진 기록은 모두 다시 저장한다
+  const drop = l => { const i = l ? l.indexOf(turn) : -1; if (i >= 0 && turn.failed) l.splice(i, 1); };
+  drop(ui.qa);
+  for (const x of store.attempts.values()) if (x.qa && x.qa.includes(turn)) { drop(x.qa); persist(x); }
+  if (ui === P.ui) renderCard();
 }
 
 /* ---------- 정답·해설 이의 검토 ---------- */
@@ -1885,7 +1964,10 @@ $('#card').addEventListener('click', e => {
     persist({ id: q.id, qid: q.id, concept: q.concept, gen: !!q.gen, reason: 'wrong', note: o.texts.join(' / ') + (r && r.changes ? ` (Claude: ${r.changes})` : ''), stem: PT(q, q.q).slice(0, 200), ts: Date.now() }, 'disputes');
     P.ui.obj = null; P.disputedNow++;
   }
-  else if (act === 'stop') { if (P.ctl) P.ctl.abort(); P.ui.grading = P.ui.probing = P.ui.diagnosing = P.ui.explaining = false; if (P.ui.obj && P.ui.obj.busy) return; }
+  else if (act === 'askopen') { P.ui.askOpen = true; P.ui.askErr = ''; }
+  else if (act === 'askclose') { P.ui.askOpen = false; P.ui.askErr = ''; }
+  else if (act === 'asksend') return askClaude();
+  else if (act === 'stop') { if (P.ctl) P.ctl.abort(); P.ui.grading = P.ui.probing = P.ui.diagnosing = P.ui.explaining = false; if (P.ui.obj && P.ui.obj.busy || P.ui.asking) return; }
   else if (act === 'resume') { P.view = 'card'; renderControls(); if (!P.q && !P.recall) return next(); }
   else if (act === 'next') return next();
   renderCard();
@@ -1910,6 +1992,7 @@ $('#card').addEventListener('scroll', e => {
 $('#card').addEventListener('keydown', e => {
   if (e.target.classList.contains('ed-in')) return edKey(e);
   if (e.target.id === 'shortBox' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); syncDrafts(); if (!cur()) submitShort(); }
+  if (e.target.id === 'askBox' && e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) { e.preventDefault(); syncDrafts(); if (!P.ui.asking) askClaude(); }
 });
 $('#order').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
