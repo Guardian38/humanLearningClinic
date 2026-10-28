@@ -165,6 +165,7 @@ textarea {
 }
 .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
 .hint { font-size: .82rem; color: var(--muted); }
+.guide-link { margin: 10px 0 0; }
 .panel { margin-top: 14px; padding: 12px 14px; border-radius: 8px; background: var(--surface-2); font-size: .93rem; }
 .panel .lbl { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .05em; color: var(--muted); margin-bottom: 3px; }
 .panel.ok { background: var(--ok-bg); } .panel.bad { background: var(--bad-bg); } .panel.mid { background: var(--mid-bg); }
@@ -1304,6 +1305,12 @@ function openBody(q, a) {
   if (u.gradeErr) h += `<p class="err">${esc(u.gradeErr)}</p>`;
   return h;
 }
+// 이해 가이드의 그 개념 절로 가는 링크(과목 데이터에 guide가 있을 때만). 가이드는 다른 아티팩트라 새 탭으로 연다
+function guideLink(cid) {
+  const g = DATA.guide, e = g && g.url && g.map && g.map[cid];
+  if (!e) return '';
+  return `<p class="hint guide-link">📘 이해 가이드에서 다시 보기: <a href="${esc(g.url)}${e.anchor ? '#' + esc(e.anchor) : ''}" target="_blank" rel="noopener">${esc(e.label)}</a></p>`;
+}
 function recallBody(cid) {
   const a = cur(), u = P.ui, [name, note] = CONCEPTS[cid];
   let h = `<p class="stem">"${esc(name)}"의 핵심을 떠올려 보세요.</p>`;
@@ -1398,9 +1405,10 @@ function renderCard() {
   if (q) {
     h += `<div class="stem">${T(q, q.q)}</div>` + figHTML(q);
     h += a && a.dunno ? dunnoBody(q, a) : q.t === 'mc' ? mcBody(q, a) : q.t === 'short' ? shortBody(q, a) : openBody(q, a);
+    if (a) h += guideLink(q.concept);
     h += objectionHTML(q, a);
     h += disputeHTML(q);
-  } else h += recallBody(cid);
+  } else h += recallBody(cid) + (a || P.ui.reveal ? guideLink(cid) : '');
   const canDispute = q && !disputed(q.id) && !P.ui.disputeOpen;
   const canObject = canDispute && a && graded(a) && !P.ui.obj;
   const canDunno = q && !a && !disputed(q.id) && !P.ui.grading && !P.ui.running && !P.ui.selfGrade;

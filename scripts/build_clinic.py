@@ -136,6 +136,18 @@ def validate(d):
             errs.append("profile.code는 {\"lang\": \"python\", \"run\": \"pyodide\"}처럼 lang(highlight.js 언어 이름)이 있어야 합니다")
         elif code.get("run") not in (None, *KNOWN_RUNNERS):
             errs.append(f"profile.code.run은 {sorted(KNOWN_RUNNERS)} 중 하나이거나 없어야 합니다(없으면 실행하지 않음)")
+    guide = d.get("guide")
+    if guide is not None:
+        # build_guide.py가 쓴 guide_map.json: {"url": 가이드 주소, "map": {개념 id: {"label", "anchor"}}}
+        gm = guide.get("map") if isinstance(guide, dict) else None
+        if not isinstance(gm, dict) or not all(isinstance(v, dict) and v.get("label") for v in gm.values()):
+            errs.append("guide는 build_guide.py가 쓴 guide_map.json 꼴({\"url\": …, \"map\": {개념 id: {\"label\": …}}})이어야 합니다")
+        else:
+            bad = [c for c in gm if c not in concepts]
+            if bad:
+                errs.append(f"guide.map에 클리닉에 없는 개념 id가 있습니다: {bad}")
+            if not guide.get("url"):
+                warns.append("guide.url이 없어 가이드 링크가 나오지 않습니다. 가이드를 게시한 뒤 guide.json에 url을 적고 가이드를 다시 빌드하세요")
     return errs, warns
 
 
