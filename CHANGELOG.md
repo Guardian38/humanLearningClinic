@@ -10,6 +10,14 @@
 
 ## 2026-10-28
 
+### 저장소: 코드 리뷰어 지정
+- 피드백(관리자): 관리자 @Guardian38을 코드 리뷰어로 두고 싶다.
+- 판단: GitHub이 PR마다 리뷰를 자동으로 요청하도록 `.github/CODEOWNERS`에 모든 파일(`*`)의 소유자로 적었다. 사람이 읽는 규칙은 기존처럼 `CONTRIBUTING.md` 한 곳에 "리뷰" 절로 두었다. 승인 없이는 합칠 수 없게 막는 것은 파일이 아니라 저장소 설정(브랜치 보호)이라 이 commit에 담을 수 없다.
+- 바뀐 것: 기여자가 PR을 열면 @Guardian38에게 리뷰가 자동으로 요청된다. `CONTRIBUTING.md`에 리뷰 절, `README.md` 파일 표에 `.github/CODEOWNERS`.
+- 할 일: (관리자) 승인을 필수로 하려면 GitHub 저장소 Settings → Branches(또는 Rulesets)에서 `main`에 "Require a pull request before merging"과 "Require review from Code Owners"를 켠다.
+- 파일: `.github/CODEOWNERS`, `CONTRIBUTING.md`, `README.md`, `CHANGELOG.md`
+- 확인: 문서·설정 파일만 바뀌어 빌드·동작 검사는 없다. CODEOWNERS가 실제로 리뷰를 요청하는지는 PR을 열어 확인해야 한다.
+
 ### 저장소: 기여 규칙과 변경 내역 쓰는 법
 - 피드백(관리자): 다른 기여자들의 Claude가 기여할 때 변경 내역을 쓰지 않아, 사람 사용자가 무엇이 바뀌었는지 확인하기 어렵다. Claude가 참고해 규칙의 일관성을 지킬 수 있는 문서가 스킬 폴더 안에 필요하다.
 - 판단:
