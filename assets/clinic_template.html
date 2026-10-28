@@ -246,12 +246,52 @@ sub, sup { line-height: 0; }
 .fig img, .fig svg { max-width: 100%; height: auto; }
 .fig figcaption { font-size: .78rem; color: var(--muted); margin-top: 6px; }
 .m { font-family: "Times New Roman", Georgia, serif; font-style: italic; }
+/* 시험 모드: 설정 창(dialog), 시험 화면(위에 고정된 시간·제출 막대, 문제 번호 이동), 성적표 */
+[hidden] { display: none !important; }
+dialog.exdlg { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--fg); padding: 22px 24px; width: min(580px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+dialog.exdlg::backdrop { background: rgb(10 14 20 / .45); }
+.exdlg h3 { margin: 0; font-size: 1.25rem; font-weight: 900; }
+.exdlg fieldset { border: 0; padding: 0; margin: 16px 0 0; min-width: 0; }
+.exdlg legend { font-size: .8rem; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin-bottom: 6px; padding: 0; }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+.choice { position: relative; display: block; cursor: pointer; }
+.choice input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.choice span { display: block; height: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--surface-2); font-size: .9rem; line-height: 1.45; }
+.choice small { display: block; color: var(--muted); font-size: .74rem; margin-top: 2px; }
+.choice input:checked + span { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.choice input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice input:disabled + span { opacity: .45; }
+.choice input:disabled { cursor: default; }
+.exam { margin-top: 22px; display: grid; gap: 14px; min-width: 0; }
+.exbar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+.exbar .ttl { font-weight: 700; }
+.extime { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.extime.low { color: var(--bad); }
+.exnav { display: flex; flex-wrap: wrap; gap: 6px; }
+.exnav button { font: inherit; font-family: var(--font-mono); font-size: .85rem; min-width: 2.5em; padding: 4px 6px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--fg); cursor: pointer; }
+.exnav button.done { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); color: var(--accent); }
+.exnav button.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 700; }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.exscore { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
+.exscore b { font-family: var(--font-mono); font-size: 3rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.exlist { display: grid; gap: 8px; }
+.exlist.only-miss .exitem.correct { display: none; }
+.exitem { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; }
+.exitem > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 10px 14px; font-size: .9rem; }
+.exitem > summary::-webkit-details-marker { display: none; }
+.exitem > summary::before { content: '▸'; color: var(--muted); }
+.exitem[open] > summary::before { content: '▾'; }
+.exitem .exbody { padding: 4px 14px 14px; border-top: 1px solid var(--border); }
+.verdict.pending { color: var(--muted); background: var(--surface-2); }
+.barrow .fill.acc { background: var(--accent); }
+.exrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; }
+.exrow .btn { grid-column: 1 / -1; justify-self: start; }
 @media (prefers-reduced-motion: no-preference) { .opt, .cpt, .btn { transition: border-color .12s, background-color .12s; } }
 </style>
 
 <div class="wrap">
   <h1>@@TITLE@@</h1>
-  <p class="lede">문제를 풀 때마다 개념별 숙련도가 쌓이고, 약한 개념과 복습할 문제가 먼저 나옵니다. 틀린 문제는 원인을 고르면 Claude가 그 오답을 겨냥한 후속 문제를 만들고, "개념 혼동"이면 어떤 생각으로 틀렸는지 물어 오개념을 진단합니다. 5문제마다 한 번은 개념 하나를 골라 기억을 되살립니다. 풀 수 없는 문제는 "모르겠음"을 누르면 정답과 함께 Claude의 자세한 설명을 볼 수 있습니다. 정답이나 해설이 이상하면 이의를 제기해 Claude의 검토를 받고, 문제를 고치거나 뺄 수 있습니다.</p>
+  <p class="lede">문제를 풀 때마다 개념별 숙련도가 쌓이고, 약한 개념과 복습할 문제가 먼저 나옵니다. 틀린 문제는 원인을 고르면 Claude가 그 오답을 겨냥한 후속 문제를 만들고, "개념 혼동"이면 어떤 생각으로 틀렸는지 물어 오개념을 진단합니다. 5문제마다 한 번은 개념 하나를 골라 기억을 되살립니다. 풀 수 없는 문제는 "모르겠음"을 누르면 정답과 함께 Claude의 자세한 설명을 볼 수 있습니다. 정답이나 해설이 이상하면 이의를 제기해 Claude의 검토를 받고, 문제를 고치거나 뺄 수 있습니다. "시험 보기"를 누르면 시간·유형·문제 수·배점을 골라 실제 시험처럼 풀고 성적표를 받습니다.</p>
   <div class="status" id="status">
     <span><span class="dot warn" id="dbDot"></span>기록 저장소 <b id="dbTxt">연결 중</b></span>
     <span><span class="dot warn" id="aiDot"></span>Claude <b id="aiTxt">확인 중</b></span>
@@ -269,11 +309,16 @@ sub, sup { line-height: 0; }
         <span class="spacer"></span>
         <span class="session" id="session"></span>
         <button type="button" class="btn" id="sumBtn">세션 요약</button>
+        <button type="button" class="btn primary" id="examBtn">시험 보기</button>
       </div>
       <article class="card" id="card"><p class="empty">기록을 불러오는 중입니다. 잠시 뒤 첫 문제가 나옵니다.</p></article>
     </section>
 
     <aside class="side" aria-label="학습 기록">
+      <div class="box">
+        <h2>시험 성적표<span id="examCount"></span></h2>
+        <ul class="mislist dlist" id="examList"></ul>
+      </div>
       <div class="box">
         <h2>개념 숙련도</h2>
         <div class="tally" id="tally"></div>
@@ -302,7 +347,18 @@ sub, sup { line-height: 0; }
       </div>
     </aside>
   </div>
+  <section class="exam" id="examView" aria-label="시험" hidden></section>
 </div>
+
+<dialog class="exdlg" id="examDlg" aria-labelledby="exDlgT">
+  <form id="examForm">
+    <h3 id="exDlgT">시험 보기</h3>
+    <p class="hint" style="margin:4px 0 0">문제 은행에서 개념을 고르게 섞어 냅니다. 시험 중에는 힌트·실행·Claude 도움 없이 풀고, 문제는 번호를 눌러 자유롭게 옮겨 다닐 수 있습니다. 시간이 다 되면 자동으로 제출됩니다.</p>
+    <div id="exFields"></div>
+    <div class="panel" id="exPrev" aria-live="polite"></div>
+    <div class="row" style="margin-top:16px"><span class="spacer"></span><button type="button" class="btn" id="exCancel">취소</button><button type="submit" class="btn primary" id="exStart">시험 시작</button></div>
+  </form>
+</dialog>
 
 <script>
 const DATA = /*@@DATA@@*/null;
@@ -726,8 +782,8 @@ async function askJSON(input, opts) {
 /* ---------- 기록 저장 ---------- */
 const LKEY = 'clinic-v1';
 const PKEY = 'clinic-pref';
-const COLLS = ['attempts', 'genq', 'disputes', 'fixes'];
-const store = { mode: 'pending', db: null, attempts: new Map(), genq: new Map(), disputes: new Map(), fixes: new Map(), dirty: new Set(), deleted: new Set() };
+const COLLS = ['attempts', 'genq', 'disputes', 'fixes', 'exams', 'examlog'];
+const store = { mode: 'pending', db: null, attempts: new Map(), genq: new Map(), disputes: new Map(), fixes: new Map(), exams: new Map(), examlog: new Map(), dirty: new Set(), deleted: new Set() };
 const chains = {};
 
 function setStatus(dot, txt, cls, label) { $(dot).className = 'dot ' + cls; $(txt).textContent = label; }
@@ -797,6 +853,9 @@ async function initStore() {
 
 /* ---------- Claude ---------- */
 let sample = null, aiOff = false;
+// 시험을 다시 열었을 때 채점이 Claude 준비를 기다린다
+let claudeDone;
+const claudeReady = new Promise(r => { claudeDone = r; });
 async function initClaude() {
   try { sample = window.claude && window.claude.use ? await window.claude.use('sample') : null; } catch (e) { sample = null; }
   if (sample) {
@@ -805,6 +864,7 @@ async function initClaude() {
     try { const L = await sample.limits(); imgOK = !!(L && L.images); } catch (e) { imgOK = false; }
   }
   else { aiOff = true; setStatus('#aiDot', '#aiTxt', 'off', '사용 불가, 직접 채점으로 진행'); }
+  claudeDone();
   renderCard();
 }
 const aiOn = () => !!sample && !aiOff;
@@ -1089,7 +1149,7 @@ function next() {
   renderCard(); renderSide();
 }
 let booted = false;
-function ready() { if (!booted) { booted = true; P.startM = mastery(); next(); } }
+function ready() { if (!booted) { booted = true; P.startM = mastery(); next(); resumeExam(); } }
 
 /* ---------- 기록 만들기 ---------- */
 function cur() { return P.aid ? store.attempts.get(P.aid) : null; }
@@ -1520,19 +1580,7 @@ async function grade() {
   // 출력이 있는 코드 문제는 먼저 실제로 실행해 의도한 출력과 비교하고, 그 결과를 채점 근거로 보낸다
   let run = null;
   if (code && q.run) { run = await runAnswer(q, ans); if (P.q !== q || ctl.signal.aborted) return; }
-  const prompt = `${ROLE}
-학생의 서술형 답안을 채점한다. 기준은 모범 답안과 강의 노트의 핵심 요소다. 표현이 달라도 뜻이 맞으면 인정하고, 노트 범위 밖 내용은 요구하지 않는다. 사실과 다른 서술은 errors에 "틀린 내용 → 바른 내용" 형태로 적는다.
-${(PROFILE.gradeRules || []).join('\n')}${(PROFILE.gradeRules || []).length ? '\n' : ''}${ALT_RULE}
-verdict 기준: 핵심 요소를 모두 담고 틀린 서술이 없으면 "correct", 일부 핵심 요소가 빠졌거나 사소한 오류가 있으면 "partial", 핵심을 놓쳤거나 중심 내용이 틀렸으면 "wrong". 여기서 핵심 요소는 위 규칙대로 갈래 중 하나만 갖추면 된다.
-
-[문제] ${PT(q, q.q)}
-${figText(q)}[모범 답안] ${PT(q, q.a)}
-${altText(q)}[관련 개념: ${CONCEPTS[q.concept][0]}] ${CONCEPTS[q.concept][1]}
-[학생 답안] ${ans || '(텍스트 없음)'}${photo ? '\n[첨부] 학생이 종이에 쓴 답안 사진. 사진의 손글씨를 읽어 함께 채점한다.' : ''}
-${code && q.run ? runText(q, run) + '코드 채점 규칙: 실제 실행 결과가 있으면 그것을 근거로 한다. 출력이 의도한 출력과 다르면 correct로 판정하지 않는다. 출력이 같아도 문제가 요구한 방법·조건을 어겼으면 partial 이하로 한다. 실행하지 않은 출력을 실행한 것처럼 말하지 않는다.\n' : ''}
-틀린 서술이 있으면 처음 틀린 지점을 errorStep에 적고, 원인이 개념 오류인지(concept) 계산 실수인지(calc) 문제를 잘못 읽은 것인지(misread) cause에 적는다.
-JSON 하나로만 답하라:
-{"verdict":"correct|partial|wrong","score":0~100 정수,"hits":["맞게 쓴 핵심 요소"],"missing":["빠진 핵심 요소"],"errors":["틀린 서술 → 바른 내용"],"errorStep":"처음 틀린 지점(없으면 빈 문자열)","cause":"concept|calc|misread|none","feedback":"학생에게 하는 2~3문장 피드백"${photo ? ',"transcript":"사진의 답안을 3~8줄로 옮겨 적은 것"' : ''}}`;
+  const prompt = openGradePrompt(q, ans, photo, run);
   try {
     const r = await sample.json(prompt, photo ? { signal: ctl.signal, images: [photo], cache: false } : { signal: ctl.signal });
     if (P.q !== q) return;
@@ -1546,6 +1594,23 @@ JSON 하나로만 답하라:
     P.ui.grading = false; P.ui.gradeErr = aiError(e);
   }
   renderCard(); renderSide();
+}
+// 서술형 채점 프롬프트: 문제 풀기와 시험 채점이 같이 쓴다
+function openGradePrompt(q, ans, photo, run) {
+  const code = isCodeQ(q);
+  return `${ROLE}
+학생의 서술형 답안을 채점한다. 기준은 모범 답안과 강의 노트의 핵심 요소다. 표현이 달라도 뜻이 맞으면 인정하고, 노트 범위 밖 내용은 요구하지 않는다. 사실과 다른 서술은 errors에 "틀린 내용 → 바른 내용" 형태로 적는다.
+${(PROFILE.gradeRules || []).join('\n')}${(PROFILE.gradeRules || []).length ? '\n' : ''}${ALT_RULE}
+verdict 기준: 핵심 요소를 모두 담고 틀린 서술이 없으면 "correct", 일부 핵심 요소가 빠졌거나 사소한 오류가 있으면 "partial", 핵심을 놓쳤거나 중심 내용이 틀렸으면 "wrong". 여기서 핵심 요소는 위 규칙대로 갈래 중 하나만 갖추면 된다.
+
+[문제] ${PT(q, q.q)}
+${figText(q)}[모범 답안] ${PT(q, q.a)}
+${altText(q)}[관련 개념: ${CONCEPTS[q.concept][0]}] ${CONCEPTS[q.concept][1]}
+[학생 답안] ${ans || '(텍스트 없음)'}${photo ? '\n[첨부] 학생이 종이에 쓴 답안 사진. 사진의 손글씨를 읽어 함께 채점한다.' : ''}
+${code && q.run ? runText(q, run) + '코드 채점 규칙: 실제 실행 결과가 있으면 그것을 근거로 한다. 출력이 의도한 출력과 다르면 correct로 판정하지 않는다. 출력이 같아도 문제가 요구한 방법·조건을 어겼으면 partial 이하로 한다. 실행하지 않은 출력을 실행한 것처럼 말하지 않는다.\n' : ''}
+틀린 서술이 있으면 처음 틀린 지점을 errorStep에 적고, 원인이 개념 오류인지(concept) 계산 실수인지(calc) 문제를 잘못 읽은 것인지(misread) cause에 적는다.
+JSON 하나로만 답하라:
+{"verdict":"correct|partial|wrong","score":0~100 정수,"hits":["맞게 쓴 핵심 요소"],"missing":["빠진 핵심 요소"],"errors":["틀린 서술 → 바른 내용"],"errorStep":"처음 틀린 지점(없으면 빈 문자열)","cause":"concept|calc|misread|none","feedback":"학생에게 하는 2~3문장 피드백"${photo ? ',"transcript":"사진의 답안을 3~8줄로 옮겨 적은 것"' : ''}}`;
 }
 function probePrompt(q, a) {
   return `${ROLE}
@@ -1755,11 +1820,11 @@ const GEN_SHAPE = {
   short: '{"t":"short","q":"문제","ans":"정답(수는 -15나 1/2, 행렬은 [1 2; 3 4] 꼴)","e":"풀이 과정 2~5문장","hints":["첫 힌트(방향만)","둘째 힌트(핵심 단계)"],"work":"손으로 3단계 넘게 계산해야 하면 \"photo\", 아니면 \"text\""}',
   open: '{"t":"open","q":"문제","a":"모범 답안 2~4문장(근거 한 갈래로)","alts":["똑같이 인정되는 다른 근거로 쓴 답안. 갈래마다 하나씩, 몇 개든(없으면 빈 배열)"],"hints":["힌트 하나"]}'
 };
-function cleanGen(r) {
+function cleanGen(r, types = GEN_TYPES) {
   if (!r || typeof r !== 'object') return null;
   const s = x => typeof x === 'string' ? x.trim() : '';
   const hints = Array.isArray(r.hints) ? r.hints.map(s).filter(Boolean).slice(0, 2) : [];
-  if (!GEN_TYPES.includes(r.t)) return null;
+  if (!types.includes(r.t)) return null;
   if (r.t === 'open') {
     const alts = Array.isArray(r.alts) ? r.alts.map(s).filter(Boolean) : [];
     if (!s(r.q) || !s(r.a)) return null;
@@ -1845,6 +1910,525 @@ ${GEN_TYPES.map(t => GEN_SHAPE[t]).join('\n')}`;
   P.genFor.delete(a.id);
   renderControls();
   if (P.aid === a.id) renderCard();
+}
+
+/* ---------- 시험 모드 ---------- */
+// 설정 창에서 시간·유형·문제 수·배점을 고르면 문제 은행에서 개념을 고르게 섞어 낸다. 제출하면(시간이 다 되면 자동) 채점해 성적표를 만든다.
+// 성적표는 db 컬렉션 exams에 최근 EXAM_KEEP개만 남긴다. 시험 풀이는 attempts에도 exam 필드를 붙여 기록해 숙련도·복습 일정에 반영한다.
+// 푸는 중인 시험은 이 브라우저(XKEY)에 두어 새로고침해도 이어서 풀고, 마감 시각은 시작 때 정한 절대 시각이라 새로고침해도 줄지 않는다
+const EXAM_TIMES = [[30, '30분'], [60, '1시간'], [90, '1시간 30분']];
+const EXAM_TYPES = { all: ['통합형', ['mc', 'short', 'open'], '객관식 · 단답형 · 서술형'], subj: ['주관식과 서술형만', ['short', 'open'], '단답형 · 서술형'], open: ['서술형만', ['open'], '서술형'] };
+const EXAM_WEIGHTS = { even: ['균등', { mc: 1, short: 1, open: 1 }, '모든 문제 같은 배점'], mid: ['서술형 가중', { mc: 1, short: 2, open: 3 }, '객관식 1 : 단답 2 : 서술 3'], heavy: ['서술형 중심', { mc: 1, short: 2, open: 5 }, '객관식 1 : 단답 2 : 서술 5'] };
+const EXAM_COUNTS = [5, 10, 15, 20];
+const EXAM_KEEP = 5;
+const XKEY = 'clinic-exam-live';
+const TYPE_NAME = { mc: '객관식', short: '단답형', open: '서술형' };
+const XVERDICT = { ...VERDICT, blank: '무응답', pending: '채점 보류' };
+const CREDIT = { correct: 1, partial: 0.5, wrong: 0, blank: 0 };
+const r1 = x => Math.round(x * 10) / 10;
+let exSet = { mins: 60, type: 'all', count: 10, weight: 'mid', ...(pref.exam || {}) };
+// XR: 화면에 띄운 성적표. 보기 상태(틀린 문제만, 채점 중)는 저장하지 않으려고 따로 둔다
+let EX = null, XR = null, exTick = null, xOnlyMiss = false;
+const exBusy = new Set();
+
+function examPool(type) { return QUESTIONS.map(eff).filter(q => EXAM_TYPES[type][1].includes(q.t) && !disputed(q.id)); }
+function shuffled(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+// 이전 시험에 나온 문제(문제 id → 마지막으로 나온 시각): examlog(시험마다 낸 문제 목록, 지우지 않음)와 남아 있는 성적표에서 모은다
+function usedQids() {
+  const s = new Map();
+  const add = (id, ts) => { if (!s.has(id) || s.get(id) < ts) s.set(id, ts); };
+  for (const l of store.examlog.values()) for (const id of l.qids || []) add(id, l.ts || 0);
+  for (const x of store.exams.values()) for (const it of x.items || []) add(it.qid, x.ts || 0);
+  return s;
+}
+// 시험지 계획: 유형별 문제 수는 문제 은행의 유형 비율대로(있는 유형은 1문제 이상) 나눈다.
+// 이전 시험에 안 나온 은행 문제(fresh)를 먼저 쓰고, 모자라는 만큼(gen)은 Claude가 새로 만든다. Claude를 쓸 수 없으면 fresh만큼만 낸다
+function examPlan(type, n) {
+  const bank = examPool(type), used = usedQids(), fresh = bank.filter(q => !used.has(q.id)), canGen = aiOn();
+  const ts = EXAM_TYPES[type][1].filter(t => bank.some(q => q.t === t));
+  const share = Object.fromEntries(ts.map(t => [t, bank.filter(q => q.t === t).length]));
+  const left = Object.fromEntries(ts.map(t => [t, fresh.filter(q => q.t === t).length]));
+  const cap = t => canGen ? Infinity : left[t];
+  if (!canGen) n = Math.min(n, fresh.length);
+  const k = Object.fromEntries(ts.map(t => [t, n >= ts.length && cap(t) > 0 ? 1 : 0]));
+  let sum = Object.values(k).reduce((s, x) => s + x, 0);
+  while (sum < n) {
+    const t = ts.filter(x => k[x] < cap(x)).sort((a, b) => share[b] / (k[b] + 1) - share[a] / (k[a] + 1))[0];
+    if (!t) break;
+    k[t]++; sum++;
+  }
+  const fromBank = Object.fromEntries(ts.map(t => [t, Math.min(k[t], left[t])]));
+  const gen = ts.reduce((s, t) => s + k[t] - fromBank[t], 0);
+  return { bank, fresh, used, ts, k, n: sum, fromBank, gen };
+}
+// 개념을 돌아가며 k개 고른다(한 개념에 몰리지 않게)
+function spreadPick(qs, k) {
+  const by = new Map();
+  for (const q of shuffled(qs)) { if (!by.has(q.concept)) by.set(q.concept, []); by.get(q.concept).push(q); }
+  const groups = shuffled([...by.values()]), got = [];
+  k = Math.min(k, qs.length);
+  while (got.length < k) for (const g of groups) if (g.length && got.length < k) got.push(g.shift());
+  return got;
+}
+// 시험지는 객관식 → 단답형 → 서술형, 같은 유형은 단원·개념 순서
+const TYPE_ORDER = ['mc', 'short', 'open'];
+const sortExam = qs => { const order = Object.keys(CONCEPTS); return qs.sort((a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t) || order.indexOf(a.concept) - order.indexOf(b.concept)); };
+
+/* 시험 문제 새로 만들기 */
+const EXAM_GEN_BATCH = 5;
+const EXAM_CODE_RULE = !CODE ? '' : `코드 문제: 서술형 코드 작성은 "code": true를 넣는다.${RUNNER
+  ? ' 출력 맞히기 단답형은 문제에 보여 주는 코드 전체를 그대로 "run": {"sol": "그 코드"}에 넣는다. 페이지가 sol을 실제로 실행해 출력이 ans와 다르면 그 문제를 버린다. 출력이 있는 코드를 요구하는 서술형은 "run": {"sol": "모범 코드 전체", "stdin": ""}를 넣는다(페이지가 실행해 의도한 출력을 만든다). 출력은 정해지게 한다(난수·시각 금지).'
+  : ' 이 과목 언어는 페이지에서 실행할 수 없으므로 run은 넣지 않는다.'} 코드는 \`\`\` 블록으로 쓴다.`;
+const EXAM_SHAPE = {
+  mc: '{"c":"개념 id","t":"mc","q":"문제","o":["보기1","보기2","보기3","보기4"],"a":정답 보기의 인덱스(0~3),"e":"정답인 이유와 오답 보기가 왜 틀렸는지 2~3문장"}',
+  short: `{"c":"개념 id","t":"short","q":"문제","ans":"정답","e":"풀이 과정 2~5문장"${CODE && RUNNER ? ',"run":{"sol":"출력 맞히기면 문제의 코드 전체"}' : ''}}`,
+  open: `{"c":"개념 id","t":"open","q":"문제","a":"모범 답안(근거 한 갈래로)","alts":["똑같이 인정되는 다른 근거의 답안(없으면 빈 배열)"]${CODE ? ',"code":true 또는 false' : ''}${CODE && RUNNER ? ',"run":{"sol":"출력이 있는 코드 작성이면 모범 코드 전체","stdin":""} 또는 null' : ''}}`
+};
+function examGenPrompt(targets, avoidStems) {
+  const cids = [...new Set(targets.map(x => x.c))];
+  const bankStems = QUESTIONS.map(q => `- ${PT(q, q.q).slice(0, 110)}`).join('\n');
+  return `${ROLE}
+시험지에 넣을 새 문제 ${targets.length}개를 만든다. 아래 [만들 문제] 목록의 순서대로, 항목마다 지정한 개념과 형식으로 하나씩 만든다.
+
+반드시 지킬 규칙:
+${COMMON_RULES.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+4. [기존 문제]와 [이전 시험에 낸 문제]를 표현만 바꿔 되풀이하지 않는다. 같은 개념이라도 다른 상황·다른 코드·다른 수치로 묻는다. 이번에 만드는 문제끼리도 겹치지 않게 한다.
+5. 객관식은 보기 4개, 정답은 정확히 하나. 오답 보기는 흔한 오해에서 나온 그럴듯한 것으로 하고 정답 위치를 무작위로 정한다. 단답형은 정답이 하나로 정해지게 한다.
+6. 서술형은 맞는 근거가 여러 갈래면 그중 둘 이상을 요구하지 않는다. 모범 답안은 한 갈래로 쓰고 다른 근거는 갈래마다 하나씩 alts에 적는다. 모범 답안 끝에 "채점 요소:"로 꼭 써야 할 요소를 적는다.
+7. 시험 문제이므로 힌트는 만들지 않는다. 문제 하나는 몇 분 안에 풀 수 있는 크기로 한다.
+8. ${MATH_RULE}${TOOL_HINT()}${EXAM_CODE_RULE ? '\n9. ' + EXAM_CODE_RULE : ''}
+${subjRules('genRules', EXAM_CODE_RULE ? 10 : 9)}
+
+[강의 노트]
+${cids.map(c => `- ${c} (${CONCEPTS[c][0]}): ${CONCEPTS[c][1]}`).join('\n')}
+
+[기존 문제: 이것과 겹치지 않게]
+${bankStems}
+
+[이전 시험에 낸 문제: 이것과 겹치지 않게]
+${avoidStems.length ? avoidStems.map(s => `- ${s}`).join('\n') : '(없음)'}
+
+[만들 문제]
+${targets.map((x, i) => `${i + 1}. 개념 ${x.c} (${CONCEPTS[x.c][0]}) · ${TYPE_NAME[x.t]}`).join('\n')}
+
+JSON 하나로만 답하라: {"questions":[…]} questions의 원소는 [만들 문제]의 순서대로, 지정한 형식의 아래 꼴이다:
+${[...new Set(targets.map(x => x.t))].map(t => EXAM_SHAPE[t]).join('\n')}`;
+}
+// AI가 낸 문제를 검사한다. 코드가 있으면 실제로 실행해, 출력 맞히기는 출력이 정답과 같을 때만, 코드 작성은 모범 코드가 끝까지 돌 때만 쓴다
+async function checkExamGen(raw, want) {
+  if (!raw || typeof raw !== 'object' || raw.t !== want.t) return null;
+  const r = cleanGen(raw, [want.t]); if (!r) return null;
+  const q = { ...r, id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), gen: true, examGen: true, concept: want.c, u: unitOf(want.c), hints: [] };
+  delete q.work;
+  const sol = raw.run && typeof raw.run.sol === 'string' && raw.run.sol.trim() ? raw.run.sol.replace(/\s+$/, '') : '';
+  if (q.t === 'short' && CODE && sol) {
+    const res = await runCode(sol, '');
+    if (res.unavailable || res.timeout || res.err) return null;
+    const out = outLines(res.out);
+    if (!out.length || !checkShort({ ans: [out.join('\n'), out.join(' ')] }, String(q.ans))) return null;
+    q.run = { sol, out: res.out, stdin: '' };
+  } else if (q.t === 'open' && q.run) {
+    const res = await runCode(q.run.sol, q.run.stdin);
+    if (res.unavailable) delete q.run;
+    else if (res.timeout || res.err && !res.out) return null;
+    else q.run.out = res.out;
+  }
+  return q;
+}
+async function genExamQs(targets, avoidStems, signal, onDone) {
+  const out = [], batches = [];
+  for (let i = 0; i < targets.length; i += EXAM_GEN_BATCH) batches.push(targets.slice(i, i + EXAM_GEN_BATCH));
+  const run = async b => {
+    let raw = null;
+    try { raw = await askJSON(examGenPrompt(b, avoidStems.concat(out.map(q => PT(q, q.q).slice(0, 110)))), { signal, cache: false }); }
+    catch (e) { if (signal.aborted) throw e; return b; }
+    const list = raw && Array.isArray(raw.questions) ? raw.questions : [];
+    const miss = [];
+    for (let i = 0; i < b.length; i++) {
+      const q = await checkExamGen(list[i], b[i]);
+      if (q) { out.push(q); onDone(); } else miss.push(b[i]);
+    }
+    return miss;
+  };
+  // 동시에 2묶음씩 만든다. 실패한 문제는 한 번만 다시 만든다
+  let miss = [];
+  const queue = batches.slice();
+  await Promise.all([0, 1].map(async () => { while (queue.length) { const m = await run(queue.shift()); miss.push(...m); } }));
+  if (miss.length && !signal.aborted) {
+    const again = [];
+    for (let i = 0; i < miss.length; i += EXAM_GEN_BATCH) again.push(...await run(miss.slice(i, i + EXAM_GEN_BATCH)));
+    miss = again;
+  }
+  return { qs: out, miss };
+}
+// 새로 만들 문제의 개념: 이 시험지에 적게 들어간 개념부터 정한다
+function genTargets(picked, need) {
+  const cnt = Object.fromEntries(Object.keys(CONCEPTS).map(c => [c, 0]));
+  for (const q of picked) if (cnt[q.concept] != null) cnt[q.concept]++;
+  return need.map(t => {
+    const c = shuffled(Object.keys(CONCEPTS)).sort((a, b) => cnt[a] - cnt[b])[0];
+    cnt[c]++;
+    return { t, c };
+  });
+}
+async function buildExam(set, signal, progress) {
+  const plan = examPlan(set.type, set.count), picked = [], need = [];
+  for (const t of plan.ts) {
+    picked.push(...spreadPick(plan.fresh.filter(q => q.t === t), plan.fromBank[t]));
+    for (let i = plan.fromBank[t]; i < plan.k[t]; i++) need.push(t);
+  }
+  let made = [], miss = [], note = '';
+  if (need.length) {
+    const prev = [...store.examlog.values()].sort((a, b) => b.ts - a.ts).flatMap(l => l.stems || []).slice(0, 40);
+    let done = 0;
+    progress(0, need.length);
+    const r = await genExamQs(genTargets(picked, need), prev, signal, () => progress(++done, need.length));
+    made = r.qs; miss = r.miss;
+  }
+  if (miss.length) {
+    // 새로 만들지 못한 만큼은 이전 시험에 나온 은행 문제 가운데 가장 오래전에 나온 것으로 채운다
+    const chosen = new Set(picked.map(q => q.id)), back = [];
+    for (const m of miss) {
+      const q = plan.bank.filter(x => x.t === m.t && !chosen.has(x.id)).sort((a, b) => (plan.used.get(a.id) || 0) - (plan.used.get(b.id) || 0))[0];
+      if (q) { back.push(q); chosen.add(q.id); }
+    }
+    picked.push(...back);
+    note = `새 문제를 ${miss.length}개 만들지 못해 ${back.length ? `이전 시험에 나온 문제 ${back.length}개를 다시 냈습니다` : '그만큼 문제 수를 줄였습니다'}.`;
+  }
+  return { qs: sortExam(picked.concat(made)), note };
+}
+const examPts = (ts, weight) => { const W = EXAM_WEIGHTS[weight][1], tot = ts.reduce((s, t) => s + W[t], 0); return ts.map(t => W[t] / tot * 100); };
+// 채점·성적표에 쓰는 문제 사본: 시험 뒤에 문제 은행이 바뀌어도 성적표는 시험 볼 때의 문제로 남는다. 새로 만든 문제는 모범 코드(sol)까지 남긴다
+function examSnap(q) {
+  const s = { id: q.id, t: q.t, concept: q.concept, u: q.u, q: q.q, e: q.e || '' };
+  for (const k of ['o', 'a', 'ans', 'alts', 'code', 'lang', 'label', 'txt', 'gen', 'examGen']) if (q[k] != null) s[k] = q[k];
+  if (q.run) s.run = { out: q.run.out || '', stdin: q.run.stdin || '', ...(q.examGen && q.run.sol ? { sol: q.run.sol } : {}) };
+  return s;
+}
+function saveLive() { try { if (EX) localStorage.setItem(XKEY, JSON.stringify(EX)); else localStorage.removeItem(XKEY); } catch (e) {} }
+let liveSave = null;
+const saveLiveSoon = () => { clearTimeout(liveSave); liveSave = setTimeout(saveLive, 400); };
+
+/* 설정 창 */
+function exChoices(name, opts, cur) {
+  return `<div class="choices" role="radiogroup">${opts.map(([v, l, sub, off]) => `<label class="choice"><input type="radio" name="${name}" value="${v}" ${String(v) === String(cur) ? 'checked' : ''} ${off ? 'disabled' : ''}><span><b>${esc(l)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`).join('')}</div>`;
+}
+function exCountOpts() {
+  // Claude가 새 문제를 만들 수 있으면 문제 수에 제한이 없고, 아니면 이전 시험에 안 나온 은행 문제 수까지
+  const max = aiOn() ? Infinity : examPlan(exSet.type, Infinity).n;
+  const opts = EXAM_COUNTS.filter(c => c < max).map(c => [c, `${c}문제`]);
+  if (max !== Infinity && max && !EXAM_COUNTS.includes(max) && max < EXAM_COUNTS[EXAM_COUNTS.length - 1]) opts.push([max, `${max}문제`, '남은 문제 전부']);
+  else if (EXAM_COUNTS.includes(max)) opts.push([max, `${max}문제`]);
+  if (!opts.some(([c]) => c === exSet.count)) exSet.count = opts.length ? opts[opts.length - 1][0] : 0;
+  return opts;
+}
+function renderExamDlg() {
+  const used = usedQids();
+  const types = Object.entries(EXAM_TYPES).map(([k, [l, , sub]]) => { const b = examPool(k); return [k, l, `${sub} · 안 나온 문제 ${b.filter(q => !used.has(q.id)).length}/${b.length}`, !b.length]; });
+  const counts = exCountOpts(), one = EXAM_TYPES[exSet.type][1].length === 1;
+  $('#exFields').innerHTML = `<fieldset><legend>시험 시간</legend>${exChoices('mins', EXAM_TIMES, exSet.mins)}</fieldset>
+    <fieldset><legend>문제 유형</legend>${exChoices('type', types, exSet.type)}</fieldset>
+    <fieldset><legend>문제 수</legend>${counts.length ? exChoices('count', counts, exSet.count) : `<p class="empty">${aiOn() ? '이 유형으로 낼 수 있는 문제가 없습니다.' : '이전 시험에 안 나온 문제가 없고, Claude를 쓸 수 없어 새 문제도 만들 수 없습니다.'}</p>`}</fieldset>
+    <fieldset><legend>배점 비율 (100점 만점)</legend>${exChoices('weight', Object.entries(EXAM_WEIGHTS).map(([k, [l, , sub]]) => [k, l, sub, one]), exSet.weight)}${one ? '<p class="hint" style="margin:6px 0 0">한 유형만 내므로 모든 문제가 같은 배점입니다.</p>' : ''}</fieldset>`;
+  renderExamPrev();
+}
+function renderExamPrev() {
+  const p = exSet.count ? examPlan(exSet.type, exSet.count) : { n: 0 }, k = p.k || {}, ts = TYPE_ORDER.filter(t => k[t]);
+  const W = EXAM_WEIGHTS[exSet.weight][1], tot = ts.reduce((s, t) => s + W[t] * k[t], 0);
+  const src = p.gen ? `이전 시험에 안 나온 은행 문제 ${p.n - p.gen}개 + Claude가 새로 만들 문제 ${p.gen}개 · 시험지를 만드는 데 1~2분 걸리고, 시간은 시험지가 준비된 뒤부터 잽니다` : '모두 이전 시험에 안 나온 은행 문제';
+  $('#exPrev').innerHTML = p.n ? `<span class="lbl">시험지 미리보기</span>${ts.map(t => `${TYPE_NAME[t]} ${k[t]}문제 × ${r1(W[t] / tot * 100)}점`).join(' · ')}<br><span class="hint">${EXAM_TIMES.find(x => x[0] === exSet.mins)[1]} · 문제당 평균 ${Math.round(exSet.mins / p.n * 10) / 10}분 · ${src}</span>` : '<span class="lbl">시험지 미리보기</span>낼 문제가 없습니다.';
+  $('#exStart').disabled = !p.n;
+}
+function openExamDlg() {
+  syncDrafts();
+  renderExamDlg();
+  $('#examDlg').showModal();
+}
+$('#examBtn').addEventListener('click', openExamDlg);
+$('#exCancel').addEventListener('click', () => $('#examDlg').close());
+$('#examForm').addEventListener('change', e => {
+  const t = e.target; if (t.type !== 'radio') return;
+  exSet[t.name] = t.name === 'type' || t.name === 'weight' ? t.value : +t.value;
+  if (t.name === 'type') {
+    renderExamDlg();
+    const el = $(`#examForm input[name="type"][value="${t.value}"]`); if (el) el.focus();
+  } else renderExamPrev();
+});
+// 시험지 만들기: 새 문제가 필요하면 Claude가 만드는 동안 진행 상황을 보여 주고, 다 되면 시험을 시작한다
+let BUILD = null;
+function renderBuild() {
+  const b = BUILD; if (!b) return;
+  paint($('#examView'), `<article class="card"><div class="qhead"><span class="num">시험지 만드는 중</span></div>
+    <p class="think" style="margin:10px 0 0">${b.total ? `Claude가 이전 시험에 안 나온 새 문제를 만드는 중입니다 (${b.done}/${b.total})…` : '문제를 고르는 중입니다…'}</p>
+    <p class="hint" style="margin:6px 0 0">코드가 있는 문제는 실제로 실행해 출력이 맞는지 확인한 것만 냅니다. 시험 시간은 시험지가 준비된 뒤부터 잽니다.</p>
+    ${b.err ? `<p class="err">${esc(b.err)}</p>` : ''}
+    <div class="row"><button type="button" class="btn" data-x="cancelbuild">${b.err ? '돌아가기' : '취소'}</button></div></article>`);
+}
+$('#examForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!exSet.count) return;
+  const set = { ...exSet };
+  pref.exam = set;
+  try { localStorage.setItem(PKEY, JSON.stringify(pref)); } catch (err) {}
+  $('#examDlg').close();
+  if (P.ctl) P.ctl.abort();
+  const b = BUILD = { ctl: new AbortController(), done: 0, total: 0 };
+  setView('exam'); renderBuild();
+  let r = null;
+  try { r = await buildExam(set, b.ctl.signal, (d, t) => { b.done = d; b.total = t; renderBuild(); }); }
+  catch (err) { if (BUILD === b && !b.ctl.signal.aborted) { b.err = '시험지를 만들지 못했습니다. ' + (aiError(err) || ''); renderBuild(); } return; }
+  if (BUILD !== b || b.ctl.signal.aborted) return;
+  BUILD = null;
+  if (!r.qs.length) { setView('clinic'); return; }
+  startExam(r.qs, set, r.note);
+});
+
+/* 시험 화면 */
+function setView(v) {
+  $('.grid').hidden = v !== 'clinic';
+  $('#examView').hidden = v === 'clinic';
+  if (v === 'clinic') { clearInterval(exTick); exTick = null; }
+  window.scrollTo({ top: 0 });
+}
+function startExam(qs, set, note) {
+  const now = Date.now(), pts = examPts(qs.map(q => q.t), set.weight);
+  EX = {
+    id: 'x' + now.toString(36) + Math.random().toString(36).slice(2, 6), set: { ...set, count: qs.length },
+    items: qs.map((q, i) => ({ qid: q.id, t: q.t, pts: pts[i], s: examSnap(q) })), ans: qs.map(() => ({})),
+    cur: 0, start: now, deadline: now + set.mins * 60000, phase: 'run', note: note || ''
+  };
+  // 낸 문제 목록은 성적표와 따로 남겨(지우지 않음) 다음 시험에서 빼고, 새로 만든 문제의 문장은 다음 출제 때 겹치지 않게 참고한다
+  persist({ id: EX.id, ts: now, qids: qs.map(q => q.id), stems: qs.filter(q => q.examGen).map(q => PT(q, q.q).slice(0, 110)) }, 'examlog');
+  saveLive();
+  XR = null;
+  setView('exam');
+  renderExam();
+  startTick();
+}
+function startTick() { clearInterval(exTick); exTick = setInterval(tickExam, 1000); tickExam(); }
+const clock = ms => { const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+function tickExam() {
+  if (!EX || EX.phase !== 'run') { clearInterval(exTick); exTick = null; return; }
+  const left = Math.max(0, EX.deadline - Date.now()), el = $('#exTimer');
+  if (el) { el.textContent = clock(left); el.classList.toggle('low', left < 5 * 60000); }
+  if (left <= 0) submitExam(true);
+}
+const exAnswered = a => a.pick != null || !!String(a.text || '').trim();
+function exQuestion(it) { return getQ(it.qid) || it.s; }
+function renderExam() {
+  const x = EX, i = x.cur, it = x.items[i], a = x.ans[i], q = exQuestion(it);
+  const done = x.ans.filter(exAnswered).length, left = x.items.length - done;
+  let h = `<div class="exbar"><span class="ttl">시험</span><span class="hint">${esc(EXAM_TYPES[x.set.type][0])} · ${x.items.length}문제 · ${esc(EXAM_TIMES.find(t => t[0] === x.set.mins)[1])}</span><span class="spacer"></span>
+    <span class="hint">남은 시간</span><span class="extime" id="exTimer" role="timer" aria-live="off">${clock(Math.max(0, x.deadline - Date.now()))}</span>
+    <button type="button" class="btn primary" data-x="submit">제출</button></div>`;
+  if (x.confirm) h += `<div class="panel mid" role="alert"><span class="lbl">제출할까요?</span>${left ? `아직 답하지 않은 문제가 <b>${left}개</b> 있습니다. 답하지 않은 문제는 0점입니다.` : '모든 문제에 답했습니다.'} 제출하면 답을 고칠 수 없습니다.
+    <div class="row"><button type="button" class="btn primary" data-x="really">제출하고 채점받기</button><button type="button" class="btn" data-x="unconfirm">계속 풀기</button></div></div>`;
+  h += `<article class="card"><nav class="exnav" aria-label="문제 이동">${x.items.map((t, k) => `<button type="button" data-x="go" data-i="${k}" class="${k === i ? 'cur' : ''} ${exAnswered(x.ans[k]) ? 'done' : ''}" ${k === i ? 'aria-current="true"' : ''} aria-label="${k + 1}번 ${TYPE_NAME[t.t]}${exAnswered(x.ans[k]) ? ' 답함' : ''}">${k + 1}</button>`).join('')}</nav>
+    <p class="hint" style="margin:6px 0 14px">답한 문제 ${done}/${x.items.length} · 파란 번호는 답을 쓴 문제입니다</p>${x.note ? `<p class="hint" style="margin:-8px 0 14px">${esc(x.note)}</p>` : ''}`;
+  h += `<div class="qhead"><span class="num">${i + 1}번</span><span>${TYPE_NAME[q.t]}</span><span class="concept">${esc(CONCEPTS[q.concept] ? CONCEPTS[q.concept][0] : '')}</span><span class="why">${r1(it.pts)}점</span></div>`;
+  h += `<div class="stem">${T(q, q.q)}</div>${figHTML(q)}`;
+  if (q.t === 'mc') h += `<div class="opts">${q.o.map((o, k) => `<button type="button" class="opt ${a.pick === k ? 'sel' : ''}" data-x="pick" data-i="${k}" aria-pressed="${a.pick === k}"><span class="k">${LETTERS[k]}</span><span>${T(q, o)}</span></button>`).join('')}</div>`;
+  else if (q.t === 'short') h += `<div class="ansline" style="margin-top:12px"><label for="exShort">답</label><input type="text" id="exShort" autocomplete="off" spellcheck="false" placeholder="${esc(SHORT_PH)}" value="${esc(a.text || '')}"></div>`;
+  else if (isCodeQ(q)) h += editorHTML(q, a.text || '').replace('id="ansBox"', 'id="exAns"');
+  else h += `<textarea id="exAns" style="min-height:160px" placeholder="답안을 쓰세요. 제출하면 Claude가 모범 답안과 강의 노트를 기준으로 채점합니다.">${esc(a.text || '')}</textarea>`;
+  h += `<div class="row" style="margin-top:18px"><button type="button" class="btn" data-x="go" data-i="${i - 1}" ${i ? '' : 'disabled'}>이전 문제</button>${q.t === 'mc' && a.pick != null ? '<button type="button" class="btn small ghost" data-x="unpick">선택 지우기</button>' : ''}<span class="spacer"></span>
+    ${i < x.items.length - 1 ? `<button type="button" class="btn primary" data-x="go" data-i="${i + 1}">다음 문제</button>` : '<button type="button" class="btn primary" data-x="submit">제출</button>'}</div></article>`;
+  paint($('#examView'), h);
+}
+function submitExam(auto) {
+  const x = EX; if (!x || x.phase !== 'run') return;
+  x.phase = 'grading'; x.end = Math.min(Date.now(), x.deadline); x.auto = !!auto; x.confirm = false;
+  saveLive();
+  finishExam(x);
+}
+// 문항 채점 결과. 객관식·단답형은 바로, 서술형은 Claude가 채점할 때까지 pending
+function examItem(it, a) {
+  const s = it.s, o = { qid: it.qid, t: it.t, pts: it.pts, concept: s.concept, s };
+  if (s.t === 'mc') {
+    o.pick = a.pick == null ? null : a.pick;
+    o.verdict = o.pick == null ? 'blank' : o.pick === s.a ? 'correct' : 'wrong';
+  } else {
+    o.answer = s.t === 'open' && isCodeQ(s) ? String(a.text || '').replace(/\s+$/, '') : String(a.text || '').trim();
+    if (!o.answer) o.verdict = 'blank';
+    else if (s.t === 'short') o.verdict = checkShort(s, o.answer) ? 'correct' : 'wrong';
+    else { o.verdict = 'pending'; o.pending = true; }
+  }
+  return o;
+}
+async function gradeExamItem(R, it) {
+  const q = it.s;
+  if (isCodeQ(q) && q.run && !it.run) it.run = await runAnswer(q, it.answer);
+  if (!aiOn()) { it.err = 'Claude를 쓸 수 없어 채점하지 못했습니다. 모범 답안을 보고 직접 채점하세요.'; return; }
+  try {
+    const g = cleanGrade(await sample.json(openGradePrompt(q, it.answer, null, it.run || null), { cache: false }), ['correct', 'partial', 'wrong']);
+    if (it.run && !it.run.unavailable && !it.run.ok && g.verdict === 'correct') g.verdict = 'partial';
+    it.grade = g; it.verdict = g.verdict; it.pending = false; delete it.err;
+  } catch (e) { it.err = '채점하지 못했습니다. ' + (aiError(e) || ''); }
+}
+async function finishExam(x) {
+  setView('exam');
+  const R = { id: x.id, ts: x.end, start: x.start, end: x.end, auto: !!x.auto, set: x.set, items: x.items.map((it, i) => examItem(it, x.ans[i])) };
+  const todo = R.items.filter(it => it.pending);
+  let n = 0;
+  const show = () => paint($('#examView'), `<article class="card"><div class="qhead"><span class="num">채점 중</span></div><p style="margin:10px 0 0">${R.auto ? '시험 시간이 끝나 자동으로 제출했습니다. ' : ''}객관식과 단답형은 채점을 마쳤습니다.</p>${todo.length ? `<p class="think" style="margin:8px 0 0">Claude가 서술형을 채점하는 중입니다 (${n}/${todo.length})…</p><p class="hint" style="margin:6px 0 0">창을 닫지 마세요. 닫으면 다음에 열 때 다시 채점합니다.</p>` : ''}</article>`);
+  show();
+  if (todo.length) {
+    await claudeReady;
+    // 동시에 2문제씩 채점한다(사용 빈도 제한을 피하려고)
+    const queue = todo.slice();
+    await Promise.all([0, 1].map(async () => { while (queue.length) { await gradeExamItem(R, queue.shift()); n++; show(); } }));
+  }
+  scoreExam(R);
+  recordExam(R);
+  EX = null; saveLive();
+  showReport(R);
+}
+function scoreExam(R) {
+  for (const it of R.items) it.earned = it.pending ? 0 : r1(it.pts * CREDIT[it.verdict]);
+  R.score = r1(R.items.reduce((s, it) => s + (it.pending ? 0 : it.pts * CREDIT[it.verdict]), 0));
+  R.pending = R.items.filter(it => it.pending).length;
+}
+// 시험 풀이를 attempts에 남겨 숙련도·복습 일정에 반영하고, 성적표를 저장한 뒤 오래된 성적표를 지운다
+function recordExam(R) {
+  for (const it of R.items) {
+    if (it.pending || it.aid) continue;
+    const s = it.s, a = { id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), qid: it.qid, concept: s.concept, unit: s.u, kind: s.t, ts: R.end, cause: null, probe: null, hints: 0, secs: null, exam: R.id };
+    // 시험용으로 새로 만든 문제는 AI 문제(genq)로 남겨 클리닉의 복습 일정에 넣는다(채점이 끝난 것만, 후속 문제로 오인되지 않게)
+    if (s.examGen) {
+      a.gen = true;
+      if (!store.genq.has(it.qid)) persist({ ...JSON.parse(JSON.stringify(s)), id: it.qid, gen: true, examGen: true, exam: R.id, from: null, src: null, hints: [], ts: R.end }, 'genq');
+    }
+    if (s.t === 'mc') Object.assign(a, { pick: it.pick == null ? -1 : it.pick, correct: it.verdict === 'correct', guessed: false });
+    else if (s.t === 'short') Object.assign(a, { answer: it.answer, correct: it.verdict === 'correct', work: '', grade: { by: 'auto', verdict: it.verdict === 'correct' ? 'correct' : 'wrong' }, override: null });
+    else Object.assign(a, { answer: it.answer, grade: it.grade || { by: it.verdict === 'blank' ? 'blank' : 'self', verdict: it.verdict === 'blank' ? 'wrong' : it.verdict }, override: null, ...(it.run ? { run: it.run } : {}) });
+    if (it.verdict === 'blank') a.blank = true;
+    it.aid = a.id;
+    persist(a);
+  }
+  persist(R, 'exams');
+  [...store.exams.values()].sort((a, b) => b.ts - a.ts).slice(EXAM_KEEP).forEach(x => removeDoc('exams', x.id));
+}
+
+/* 성적표 */
+function showReport(R) { XR = R; xOnlyMiss = false; setView('exam'); renderReport(); }
+function reportItemHTML(R, it, i) {
+  const s = it.s, v = it.verdict, live = QMAP.get(it.qid);
+  const cls = v === 'blank' ? 'wrong' : v;
+  let h = `<details class="exitem ${v === 'correct' ? 'correct' : ''}" ${v !== 'correct' ? 'open' : ''}><summary><span class="mono">${i + 1}</span><span class="verdict ${cls}">${XVERDICT[v]}</span><span>${TYPE_NAME[s.t]} · ${esc(CONCEPTS[s.concept] ? CONCEPTS[s.concept][0] : '')}</span><span class="spacer"></span><span class="mono">${it.pending ? '–' : it.earned}/${r1(it.pts)}점</span></summary><div class="exbody">`;
+  h += `<div class="stem">${T(s, s.q)}</div>${live ? figHTML(live) : ''}`;
+  if (s.t === 'mc') {
+    h += `<div class="opts">${s.o.map((o, k) => `<button type="button" class="opt ${k === s.a ? 'right' : k === it.pick ? 'wrong' : 'dim'}" disabled><span class="k">${LETTERS[k]}</span><span>${T(s, o)}${k === it.pick ? ' <span class="hint">(내 답)</span>' : ''}</span></button>`).join('')}</div>`;
+    if (it.pick == null) h += '<p class="hint" style="margin:8px 0 0">답하지 않았습니다.</p>';
+    h += `<div class="panel ${v === 'correct' ? 'ok' : 'bad'}"><span class="lbl">정답 ${LETTERS[s.a]} · 해설</span>${T(s, s.e)}</div>`;
+  } else if (s.t === 'short') {
+    h += `<div class="ansline"><label>내 답</label><span class="mono">${it.answer ? esc(it.answer) : '(답하지 않음)'}</span></div>`;
+    h += `<div class="panel ${v === 'correct' ? 'ok' : 'bad'}"><span class="lbl">정답 ${esc(ansText(s))} · 풀이</span>${T(s, s.e)}</div>`;
+  } else {
+    const code = isCodeQ(s);
+    h += `<p class="hint" style="margin:0 0 4px">내 답안</p>` + (!it.answer ? '<div class="panel" style="margin-top:0">(답하지 않음)</div>'
+      : code ? `<pre><code class="language-${esc(s.lang || CODE.lang || '')}">${esc(it.answer)}</code></pre>` : `<div class="panel" style="margin-top:0;white-space:pre-wrap">${esc(it.answer)}</div>`);
+    if (code && it.answer) h += runHTML(s, it.run);
+    if (it.grade && it.grade.by === 'claude') h += `<div class="panel ${v === 'correct' ? 'ok' : v === 'partial' ? 'mid' : 'bad'}"><span class="lbl">Claude 채점</span><span class="verdict ${v}">${VERDICT[v]}</span>${claudeGradeHTML(it.grade)}</div>`;
+    else if (it.grade && it.grade.by === 'self') h += `<p class="hint" style="margin:8px 0 0">직접 채점: ${VERDICT[v]}</p>`;
+    if (it.pending) {
+      h += `<div class="panel mid"><span class="lbl">채점 보류</span>${esc(it.err || '아직 채점하지 않았습니다.')}<div class="row">${aiOn() ? `<button type="button" class="btn claude solid small" data-x="regrade" data-i="${i}" ${exBusy.has(it) ? 'disabled' : ''}>${exBusy.has(it) ? '채점하는 중…' : 'Claude에게 다시 채점받기'}</button>` : ''}<span class="hint">직접 채점:</span>${['correct', 'partial', 'wrong'].map(k => `<button type="button" class="btn small" data-x="self" data-i="${i}" data-v="${k}">${VERDICT[k]}</button>`).join('')}</div></div>`;
+    }
+    h += `<div class="panel"><span class="lbl">모범 답안</span>${T(s, s.a)}</div>` + altHTML(s);
+  }
+  return h + '</div></details>';
+}
+function renderReport() {
+  const R = XR, it = R.items, cnt = { correct: 0, partial: 0, wrong: 0, blank: 0, pending: 0 };
+  for (const x of it) cnt[x.verdict]++;
+  const used = Math.round((R.end - R.start) / 1000), d = new Date(R.ts);
+  const sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
+  const byType = ['mc', 'short', 'open'].filter(t => it.some(x => x.t === t)).map(t => { const xs = it.filter(x => x.t === t); return { t, n: xs.length, got: sum(xs, x => x.earned || 0), max: sum(xs, x => x.pts) }; });
+  const cids = [...new Set(it.map(x => x.concept))];
+  const byC = cids.map(c => { const xs = it.filter(x => x.concept === c); return { c, n: xs.length, ok: xs.filter(x => x.verdict === 'correct').length, rate: sum(xs, x => x.earned || 0) / sum(xs, x => x.pts) }; }).sort((a, b) => a.rate - b.rate);
+  let h = `<article class="card"><div class="qhead"><span class="num">시험 성적표</span><span>${d.toLocaleDateString('ko-KR')} ${d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span><span>${esc(EXAM_TYPES[R.set.type][0])} · ${it.length}문제 · ${esc(EXAM_WEIGHTS[R.set.weight][0])} 배점</span></div>
+    <div class="exscore"><b>${R.score}</b><span>/ 100점</span>${R.pending ? `<span class="tag">채점 보류 ${R.pending}문제 (0점으로 계산)</span>` : ''}</div>
+    <p class="hint" style="margin:6px 0 0">걸린 시간 ${fmtSecs(used)} / 제한 ${esc(EXAM_TIMES.find(t => t[0] === R.set.mins)[1])}${R.auto ? ' · 시간이 다 되어 자동 제출' : ''}</p>
+    <div class="sumgrid"><div><b>${cnt.correct}</b>맞음</div><div><b>${cnt.partial}</b>부분 정답</div><div><b>${cnt.wrong}</b>틀림</div><div><b>${cnt.blank}</b>무응답</div></div>
+    <h2 style="margin-top:20px">유형별 점수</h2><div class="bars">${byType.map(x => `<div class="barrow"><span>${TYPE_NAME[x.t]} ${x.n}</span><span class="track"><span class="fill acc" style="width:${x.max ? x.got / x.max * 100 : 0}%"></span></span><span class="v">${r1(x.got)}</span></div>`).join('')}</div>
+    <p class="hint" style="margin:4px 0 0">${byType.map(x => `${TYPE_NAME[x.t]} ${r1(x.got)}/${r1(x.max)}점`).join(' · ')}</p>
+    <h2 style="margin-top:20px">개념별 결과 (낮은 순)</h2><div class="sumlist">${byC.map(x => `<div class="sumrow"><span class="cpt ${x.rate >= 0.8 ? 'good' : x.rate >= 0.5 ? 'mid' : 'weak'}" style="cursor:default"><span class="s"></span>${esc(CONCEPTS[x.c] ? CONCEPTS[x.c][0] : x.c)}</span><span class="mono">${x.ok}/${x.n} 맞음 · ${Math.round(x.rate * 100)}%</span><span></span></div>`).join('')}</div>
+    <p class="hint" style="margin:6px 0 0">시험 결과는 개념 숙련도와 복습 일정에도 반영됐습니다. 틀린 문제는 약점 클리닉에서 곧 다시 나옵니다.</p>
+    <div class="row" style="margin-top:20px"><h2 style="margin:0">문제별 채점과 해설</h2><span class="spacer"></span><div class="seg" role="group" aria-label="보기"><button type="button" data-x="filter" data-v="all" aria-pressed="${!xOnlyMiss}">전체</button><button type="button" data-x="filter" data-v="miss" aria-pressed="${xOnlyMiss}">틀린 문제만</button></div></div>
+    <div class="exlist ${xOnlyMiss ? 'only-miss' : ''}" style="margin-top:10px">${it.map((x, i) => reportItemHTML(R, x, i)).join('')}</div>
+    <div class="row" style="margin-top:20px"><span class="spacer"></span><button type="button" class="btn primary" data-x="back">약점 클리닉으로 돌아가기</button></div></article>`;
+  paint($('#examView'), h);
+}
+function saveReport(R) { scoreExam(R); recordExam(R); renderReport(); }
+
+$('#examView').addEventListener('click', async e => {
+  const b = e.target.closest('[data-x]'); if (!b || b.disabled) return;
+  const act = b.dataset.x;
+  if (act === 'cancelbuild') { if (BUILD) BUILD.ctl.abort(); BUILD = null; setView('clinic'); renderCard(); return; }
+  if (EX && EX.phase === 'run') {
+    const a = EX.ans[EX.cur];
+    if (act === 'go') { EX.cur = Math.max(0, Math.min(EX.items.length - 1, +b.dataset.i)); EX.confirm = false; }
+    else if (act === 'pick') a.pick = +b.dataset.i;
+    else if (act === 'unpick') delete a.pick;
+    else if (act === 'submit') EX.confirm = true;
+    else if (act === 'unconfirm') EX.confirm = false;
+    else if (act === 'really') return submitExam(false);
+    saveLive(); renderExam();
+    if (act === 'go' || act === 'submit') window.scrollTo({ top: 0 });
+    return;
+  }
+  if (!XR) return;
+  const it = XR.items[+b.dataset.i];
+  if (act === 'back') { XR = null; setView('clinic'); renderCard(); renderSide(); }
+  else if (act === 'filter') { xOnlyMiss = b.dataset.v === 'miss'; renderReport(); }
+  else if (act === 'self' && it && it.pending) { it.verdict = b.dataset.v; it.grade = { by: 'self', verdict: it.verdict }; it.pending = false; delete it.err; saveReport(XR); }
+  else if (act === 'regrade' && it && it.pending) {
+    const R = XR; exBusy.add(it); renderReport();
+    await gradeExamItem(R, it);
+    exBusy.delete(it);
+    if (XR === R) saveReport(R); else { scoreExam(R); recordExam(R); }
+  }
+});
+$('#examView').addEventListener('input', e => {
+  if (!EX || EX.phase !== 'run') return;
+  const t = e.target;
+  if (t.id !== 'exShort' && t.id !== 'exAns') return;
+  if (t.classList.contains('ed-in')) edSync(t.closest('.ed'));
+  EX.ans[EX.cur].text = t.value;
+  const nb = $(`#examView .exnav button[data-i="${EX.cur}"]`); if (nb) nb.classList.toggle('done', !!t.value.trim());
+  saveLiveSoon();
+});
+$('#examView').addEventListener('keydown', e => {
+  if (e.target.classList.contains('ed-in')) return edKey(e);
+  if (e.target.id === 'exShort' && e.key === 'Enter' && !e.isComposing) e.preventDefault();
+});
+$('#examView').addEventListener('scroll', e => {
+  const t = e.target;
+  if (t.classList && t.classList.contains('ed-in')) t.previousElementSibling.scrollLeft = t.scrollLeft;
+}, true);
+$('#examList').addEventListener('click', e => {
+  const b = e.target.closest('[data-exam]'); if (!b) return;
+  const R = store.exams.get(b.dataset.exam); if (!R) return;
+  syncDrafts();
+  showReport(JSON.parse(JSON.stringify(R)));
+});
+// 새로고침이나 다시 열기: 푸는 중이던 시험을 이어서 풀고, 그사이 시간이 다 됐으면 바로 제출한다
+function resumeExam() {
+  let x = null;
+  try { x = JSON.parse(localStorage.getItem(XKEY) || 'null'); } catch (e) { x = null; }
+  if (!x || !Array.isArray(x.items) || !x.items.length) return;
+  EX = x;
+  if (x.phase === 'grading') return finishExam(x);
+  setView('exam');
+  if (Date.now() >= x.deadline) return submitExam(true);
+  renderExam();
+  startTick();
+}
+function renderExamList() {
+  const xs = [...store.exams.values()].sort((a, b) => b.ts - a.ts);
+  $('#examCount').textContent = xs.length ? ` (${xs.length}/${EXAM_KEEP})` : '';
+  $('#examList').innerHTML = xs.length
+    ? xs.map(x => { const d = new Date(x.ts); return `<li class="exrow"><span><b class="mono">${x.score}점</b> · ${esc(EXAM_TYPES[x.set.type] ? EXAM_TYPES[x.set.type][0] : '')} ${x.items.length}문제</span><span class="c">${d.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })} ${d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>${x.pending ? `<span class="c" style="grid-column:1/-1">채점 보류 ${x.pending}문제</span>` : ''}<button type="button" class="btn small" data-exam="${esc(x.id)}">성적표 보기</button></li>`; }).join('')
+    : `<li class="empty">"시험 보기"로 시험을 보면 성적표가 여기에 저장됩니다. 최근 ${EXAM_KEEP}개까지 남고, 넘으면 오래된 것부터 지워집니다.</li>`;
 }
 
 /* ---------- 이벤트 ---------- */
@@ -1967,6 +2551,7 @@ function renderControls() {
 /* ---------- 사이드 ---------- */
 function renderSide() {
   renderControls();
+  renderExamList();
   const m = mastery();
   const cnt = { good: 0, mid: 0, weak: 0, none: 0 };
   for (const r of Object.values(m)) cnt[r.status]++;
