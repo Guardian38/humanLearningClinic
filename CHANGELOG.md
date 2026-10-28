@@ -16,8 +16,9 @@
   - 본문을 대신 써 주는 대신, 리뷰어가 물을 질문(왜, 무엇이, 왜 이 방법, 어떻게 확인, 남은 것)을 빈 절로 둔 템플릿을 GitHub 기본 위치(`.github/pull_request_template.md`)에 두었다. PR을 열 때마다 본문 칸에 자동으로 채워져 따로 찾아 읽을 필요가 없다.
   - 절 구성은 CHANGELOG 항목 형식(피드백·판단·바뀐 것·확인·할 일)에 맞췄다. 기여자가 CHANGELOG를 먼저 쓰면 PR 본문은 거기에 리뷰어용 말만 덧붙이면 된다.
   - 안내는 HTML 주석으로 넣어 지우지 않아도 게시된 PR에 보이지 않게 했다. 체크리스트에는 `CONTRIBUTING.md`에서 자주 빠뜨리는 규칙만 넣었다.
-- 바뀐 것: PR을 열면 본문 칸에 템플릿이 채워진다. `CONTRIBUTING.md`에 "PR 본문은 사람이 직접 쓰고 템플릿 절을 채운다"는 줄, `README.md` 파일 표에 템플릿.
-- 파일: `.github/pull_request_template.md`, `CONTRIBUTING.md`, `README.md`, `CHANGELOG.md`
+  - "PR 본문은 사람이 직접 쓴다"는 규칙으로 만들지 않았다(관리자 결정). 기여자에게 강요하지 않으려고 `CONTRIBUTING.md`와 템플릿에는 적지 않고 이 기록에만 남긴다.
+- 바뀐 것: PR을 열면 본문 칸에 템플릿이 채워진다. `README.md` 파일 표에 템플릿.
+- 파일: `.github/pull_request_template.md`, `README.md`, `CHANGELOG.md`
 - 확인: 문서만 바뀌어 빌드·동작 검사는 없다. 템플릿은 `main`에 들어간 뒤 PR을 열 때 채워지므로 아직 실제로 보지 못했다.
 
 ### 저장소: 코드 리뷰어 지정
