@@ -42,6 +42,8 @@ Windows는 `C:\Users\<이름>\.claude\skills\study-clinic`에 받는다. Claude 
 | `references/question-rules.md` | 출제 원칙(공통 규칙, 과목마다 정할 것, 피할 것) |
 | `examples/linear_algebra_make_subject.py` | 예시: 선형대수 ch1~2 문제 은행(68문항, sympy 검증 포함). 구조만 참고하고, 안의 `PROFILE`은 그 과목에서 정한 값이라 그대로 쓰지 않는다 |
 | `CHANGELOG.md` | 변경 내역(받은 피드백, 판단, 바뀐 것) |
+| `CONTRIBUTING.md` | 기여 규칙. 스킬을 고치면 같은 commit에서 `CHANGELOG.md`에 기록한다 |
+| `CLAUDE.md` | 저장소에서 작업하는 Claude Code가 기여 규칙을 자동으로 읽게 한다 |
 
 ## 피드백
 

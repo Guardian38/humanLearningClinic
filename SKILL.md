@@ -5,7 +5,7 @@ description: 강의 자료(요약 노트, 슬라이드, 연습문제)로 과목�
 
 # 약점 클리닉 만들기
 
-스킬을 고치면 `CHANGELOG.md`에 피드백·판단·바뀐 것을 적는다. 원본 저장소는 https://github.com/Guardian38/humanLearningClinic 이고 피드백은 그 저장소의 Issues로 받는다. 이 폴더가 git 저장소면 고친 뒤 commit한다(push는 사용자에게 먼저 묻는다).
+스킬을 고치면 먼저 `CONTRIBUTING.md`를 읽고, 같은 commit에서 `CHANGELOG.md`에 그 형식대로 적는다. 원본 저장소는 https://github.com/Guardian38/humanLearningClinic 이고 피드백은 그 저장소의 Issues로 받는다. 이 폴더가 git 저장소면 고친 뒤 commit한다(push는 사용자에게 먼저 묻는다).
 
 클리닉은 템플릿 하나(`assets/clinic_template.html`)와 과목 데이터(JSON)로 만든다. 엔진(숙련도, 복습 간격, 출제 비율, Claude 기능, 이의 제기, 기록 저장)은 과목과 무관하고, 과목마다 바뀌는 것은 데이터뿐이다.
 
