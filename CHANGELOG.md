@@ -1,12 +1,24 @@
 # study-clinic 변경 내역
 
-저장소: https://github.com/Guardian38/humanLearningClinic. 피드백과 버그 보고는 Issues로 받는다. 새 항목은 날짜 절 맨 위에 넣고, 아래 "아직 확인하지 못한 것"도 함께 고친다.
+저장소: https://github.com/Guardian38/humanLearningClinic. 피드백과 버그 보고는 Issues로 받는다. 쓰는 법(위치, 항목 형식)은 `CONTRIBUTING.md`를 본다.
 
 ## 아직 확인하지 못한 것
 
 - Node가 없는 컴퓨터에서는 JavaScript 문제의 의도한 출력(`run.out`)을 빌드가 검증하지 못해 직접 적어야 한다.
 - 이의 검토(5절)를 실제 이의로 돌려 보지 않았다: 원인에 따라 요약.md를 고치거나 건드리지 않는 판단, 반영 후 `disputes`·`fixes` 삭제.
 - "모르겠음" 설명과 한도 안내를 실제 claude.ai 아티팩트(진짜 `sample`)에서 돌려 보지 않았다. 가짜 `sample`로만 검사했다.
+
+## 2026-10-28
+
+### 저장소: 기여 규칙과 변경 내역 쓰는 법
+- 피드백(관리자): 다른 기여자들의 Claude가 기여할 때 변경 내역을 쓰지 않아, 사람 사용자가 무엇이 바뀌었는지 확인하기 어렵다. Claude가 참고해 규칙의 일관성을 지킬 수 있는 문서가 스킬 폴더 안에 필요하다.
+- 판단:
+  - 기록 규칙은 `SKILL.md` 첫머리 한 줄뿐이라 형식(항목 구성, 같은 날짜 절 처리)이 기여자마다 달랐다. 실제로 기여 브랜치들이 같은 날짜 절을 각자 새로 만들거나 "파일", "확인" 줄을 빠뜨렸다. 지금 이 파일이 쓰는 형식을 그대로 규칙으로 적었다.
+  - 규칙은 `CONTRIBUTING.md` 한 곳에 둔다. 저장소에서 작업하는 Claude Code는 `CLAUDE.md`로 자동으로 읽고, 스킬을 쓰다가 고치는 Claude는 `SKILL.md` 첫 줄의 안내로 읽는다. 스킬을 쓸 때마다 읽는 `SKILL.md`에 규칙 전체를 넣지 않아 읽는 양이 늘지 않게 했다.
+  - 웹 업로드로 파일 전체를 바꾼 브랜치는 줄바꿈이 바뀌어 diff가 파일 전체로 보였다. 변경 내역만큼 diff도 사람이 읽는 기록이므로 함께 규칙에 넣었다.
+- 바뀐 것: 새 `CONTRIBUTING.md`(기록 필수, 위치, 항목 형식, diff 규칙), 새 `CLAUDE.md`(기여 규칙 불러오기), `SKILL.md` 첫 줄 안내, 이 파일 머리말, `README.md` 파일 표.
+- 파일: `CONTRIBUTING.md`, `CLAUDE.md`, `SKILL.md`, `CHANGELOG.md`, `README.md`
+- 확인: 문서만 바뀌어 빌드·동작 검사는 없다.
 
 ## 2026-10-27
 
