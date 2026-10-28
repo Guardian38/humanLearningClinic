@@ -44,6 +44,7 @@ Windows는 `C:\Users\<이름>\.claude\skills\study-clinic`에 받는다. Claude 
 | `CHANGELOG.md` | 변경 내역(받은 피드백, 판단, 바뀐 것) |
 | `CONTRIBUTING.md` | 기여 규칙. 스킬을 고치면 같은 commit에서 `CHANGELOG.md`에 기록한다 |
 | `CLAUDE.md` | 저장소에서 작업하는 Claude Code가 기여 규칙을 자동으로 읽게 한다 |
+| `.github/CODEOWNERS` | 코드 리뷰어(@Guardian38). PR을 열면 자동으로 리뷰를 요청한다 |
 
 ## 피드백
 
