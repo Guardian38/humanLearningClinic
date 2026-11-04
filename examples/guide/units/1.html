@@ -1,0 +1,22 @@
+<h2 id="inv" data-c="1.inv">1. 역행렬과 singular</h2>
+<p class="oneline">역행렬 = 행렬이 한 일을 되돌리는 행렬</p>
+<p><b>왜?</b> 연립방정식 $A\mathbf{x} = \mathbf{b}$를 풀 때, 수에서 $ax = b$를 $x = b/a$로 풀듯 행렬에서도 "나누기"가 필요합니다. 행렬에는 나누기가 없으므로 $A$를 곱한 효과를 지우는 행렬 $A^{-1}$을 곱합니다.</p>
+<div class="formula">$$AA^{-1} = A^{-1}A = I, \qquad \begin{pmatrix}a & b\\ c & d\end{pmatrix}^{-1} = \frac{1}{ad-bc}\begin{pmatrix}d & -b\\ -c & a\end{pmatrix}$$</div>
+<p><b>직관</b>: $A$가 평면을 늘이거나 돌리는 동작이라면, $A^{-1}$은 그 반대 동작입니다. 그런데 평면을 직선 하나로 짓누르는 동작은 되돌릴 수 없습니다. 짓눌린 뒤에는 원래 어느 점이었는지 알 수 없기 때문입니다. 이런 행렬이 <b>singular</b>입니다.</p>
+<div class="box idea"><span class="tag">핵심</span>
+  <p>2×2 공식의 분모 $ad - bc$가 0이면 역행렬이 없습니다. 이 값이 Ch.2의 행렬식이고, 0이라는 것은 "평면이 납작해진다"는 뜻입니다(<a href="#c-2.vol">Ch.2 행렬식</a>).</p>
+</div>
+<div class="box pit"><span class="tag">자주 하는 오해</span>
+  <ul>
+    <li>$(AB)^{-1} = A^{-1}B^{-1}$이라고 쓰기 → 순서가 바뀌어 $B^{-1}A^{-1}$입니다. 양말을 신고 신발을 신었으면, 벗을 때는 신발부터 벗습니다.</li>
+    <li>원소가 모두 0이 아니면 역행렬이 있다고 생각하기 → $\begin{pmatrix}1 & 2\\ 2 & 4\end{pmatrix}$는 원소가 모두 0이 아니지만 singular입니다.</li>
+  </ul>
+</div>
+
+<h2 id="quiz1">2. 스스로 점검하기</h2>
+<p class="quiz-summary"></p>
+<div class="q mcq" data-id="m1" data-answer="2"><div class="qtext">$\begin{pmatrix}2 & 1\\ 4 & 2\end{pmatrix}$에 대해 옳은 것은?</div>
+  <ol><li>역행렬은 $\begin{pmatrix}2 & -1\\ -4 & 2\end{pmatrix}$이다</li><li>원소가 모두 0이 아니므로 역행렬이 있다</li><li>singular이다</li><li>역행렬은 자기 자신이다</li></ol>
+  <div class="explain">③ $ad - bc = 4 - 4 = 0$이므로 singular입니다. ①은 공식에서 $\frac{1}{ad-bc}$를 빼고 쓴 것인데, 분모가 0이라 이 공식을 쓸 수 없습니다. ②는 원소가 0인지가 아니라 $ad - bc$가 0인지로 정해집니다.</div></div>
+<div class="q" data-id="1"><div class="qtext">$\begin{pmatrix}3 & 1\\ 5 & 2\end{pmatrix}$의 역행렬을 구하시오.</div>
+  <div class="a">$ad - bc = 6 - 5 = 1$이므로 $\begin{pmatrix}2 & -1\\ -5 & 3\end{pmatrix}$입니다.</div></div>

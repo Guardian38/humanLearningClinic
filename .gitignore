@@ -3,3 +3,4 @@ share/
 __pycache__/
 *.zip
 examples/subject.json
+examples/guide/guide_map.json

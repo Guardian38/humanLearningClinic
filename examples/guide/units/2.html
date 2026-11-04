@@ -1,0 +1,55 @@
+<h2 id="vol" data-c="2.vol">1. 넓이·부피로서의 행렬식</h2>
+<p class="oneline">|det A| = 단위 정사각형(정육면체)의 넓이(부피)가 몇 배가 되는가</p>
+<p><b>왜?</b> 행렬식 계산 규칙(여인수 전개, 행 연산)은 외우기 쉽지만 "그 수가 무엇인가"를 모르면 $\det A = 0$의 뜻, 부호가 바뀌는 이유를 설명할 수 없습니다.</p>
+<p>2×2 행렬의 두 열은 각각 $(1,0)$과 $(0,1)$이 옮겨 가는 곳입니다. 단위 정사각형은 이 두 열이 만드는 평행사변형으로 바뀌고, 그 넓이가 $|ad - bc|$입니다.</p>
+<div class="lab"><span class="tag">직접 해보기</span>
+  <h4>2×2 행렬로 공간 변환하기</h4>
+  <p class="how">행렬 원소를 바꾸거나 예시 버튼을 누르세요. 주황색 넓이가 단위 정사각형(넓이 1)이 바뀐 결과입니다.</p>
+  <div class="controls">
+    $A = $ [ <input type="number" id="la11" step="0.5" value="2"> <input type="number" id="la12" step="0.5" value="1"> ; <input type="number" id="la21" step="0.5" value="1"> <input type="number" id="la22" step="0.5" value="2"> ]
+  </div>
+  <div class="controls">
+    <button type="button" data-lam="2,1,1,2">[[2,1],[1,2]]</button><button type="button" data-lam="1,2,2,4">singular [[1,2],[2,4]]</button><button type="button" data-lam="0,1,1,0">두 열 바꾸기 [[0,1],[1,0]]</button>
+  </div>
+  <canvas id="cvDet" data-h="340"></canvas>
+  <div class="readout" id="outDet"></div>
+  <ul class="try">
+    <li><b>singular</b>를 누르세요 → 평면이 직선 하나로 짓눌려 넓이가 0입니다. Ch.1의 "역행렬이 없다"와 같은 사실입니다.</li>
+    <li><b>두 열 바꾸기</b> → 넓이는 1 그대로인데 행렬식은 −1입니다. 음수는 평면이 <b>뒤집혔다</b>는 뜻입니다.</li>
+  </ul>
+</div>
+<div class="box pit"><span class="tag">자주 하는 오해</span>
+  <ul>
+    <li>$\det(A + B) = \det A + \det B$라고 생각하기 → 성립하지 않습니다. 곱에 대해서만 $\det(AB) = \det A \det B$입니다.</li>
+  </ul>
+</div>
+
+<h2 id="quiz2">2. 스스로 점검하기</h2>
+<p class="quiz-summary"></p>
+<div class="q" data-id="1"><div class="qtext">$\det A = 3$인 2×2 행렬 $A$로 넓이 5인 도형을 옮기면 넓이는 얼마인가?</div>
+  <div class="a">넓이는 $|\det A|$배가 되므로 $15$입니다.</div></div>
+
+<script>
+/* ---------- 2×2 행렬 변환 ---------- */
+(() => {
+  const p = new G.Plot(G.$("#cvDet"), { xmin: -5, xmax: 5, ymin: -4, ymax: 4, pad: 16 });
+  const fit = () => { const hy = 4.2, hx = hy * p.w / p.h * 0.98; Object.assign(p.view, { xmin: -hx, xmax: hx, ymin: -hy, ymax: hy }); };
+  const ins = ["la11", "la12", "la21", "la22"].map((i) => G.$("#" + i)), out = G.$("#outDet");
+  const draw = () => {
+    p.clear(); fit();
+    const [a, b, c, d] = ins.map((x) => +x.value || 0);
+    const T = (x, y) => [a * x + b * y, c * x + d * y];
+    p.grid(1, false);
+    for (let k = -6; k <= 6; k++) { p.path([T(k, -6), T(k, 6)], G.css("--c1") + "88", k ? 1 : 2); p.path([T(-6, k), T(6, k)], G.css("--c1") + "88", k ? 1 : 2); }
+    const ctx = p.ctx, sq = [T(0, 0), T(1, 0), T(1, 1), T(0, 1)];
+    ctx.beginPath(); sq.forEach(([x, y], i) => (i ? ctx.lineTo(p.X(x), p.Y(y)) : ctx.moveTo(p.X(x), p.Y(y)))); ctx.closePath();
+    ctx.fillStyle = G.css("--c2") + "77"; ctx.fill(); ctx.strokeStyle = G.css("--c2"); ctx.lineWidth = 2; ctx.stroke();
+    p.arrow(0, 0, ...T(1, 0), G.css("--c4")); p.arrow(0, 0, ...T(0, 1), G.css("--c5"));
+    const det = a * d - b * c;
+    out.innerHTML = `det A = ad − bc = ${a}·${d} − ${b}·${c} = <b>${G.fmt(det, 2)}</b>  → 넓이 ${G.fmt(Math.abs(det), 2)}배${det < 0 ? ", 평면이 뒤집힘" : ""}${Math.abs(det) < 1e-9 ? '  <span class="bad">singular</span>' : ""}`;
+  };
+  G.lab(draw);
+  ins.forEach((el) => el.addEventListener("input", draw));
+  G.$$("[data-lam]").forEach((btn) => btn.addEventListener("click", () => { btn.dataset.lam.split(",").forEach((v, i) => (ins[i].value = v)); draw(); }));
+})();
+</script>
