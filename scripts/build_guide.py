@@ -27,6 +27,12 @@ guide.json
 - 절은 <h2 id="…">. 개념 절에는 data-c="개념id"(여러 개면 공백으로)를 붙인다. h3에도 붙일 수 있다.
 - id는 페이지 전체(모든 단원)에서 하나여야 한다. 실습 스크립트는 조각 끝에 인라인 <script>로 쓰고 외부 파일을 불러오지 않는다.
 - 코드 블록은 <pre class="code"><code class="language-python">…</code></pre>. 클리닉·요약과 같은 색으로 칠한다.
+- 용어 카드: <div class="term" id="t-이름"><div><div class="tname">용어 <small>한국어·기호</small></div>
+  <p class="plain">쉬운 말 뜻</p><p class="ex">숫자 예</p></div><figure><svg …></svg><figcaption>…</figcaption></figure></div>
+  (그림이 없으면 class="term nofig"). 본문의 <a class="g" href="#t-이름">용어</a>에 마우스를 올리거나 누르면 .tname과
+  .plain이 팝업으로 뜬다. 첫 화면 조각에 <div id="glossary"></div>를 두면 모든 카드로 용어 사전을 만든다.
+  빌드는 a.g의 대상 카드가 있는지, 카드에 .tname·.plain이 있는지 검사한다.
+- SVG 화살촉: marker-end="url(#ah)"(글자색), url(#ah1)~url(#ah5)(--c1~--c5). 틀에 정의되어 있다.
 """
 import html
 import json
@@ -49,6 +55,7 @@ class Scan(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.ids, self.heads, self.qs, self.langs, self.ext = [], [], [], set(), []
+        self.terms, self.glinks = [], []  # 용어 카드(.term), 용어 풀이 링크(a.g)
         self.head = None  # 읽는 중인 h2/h3
         self.q = None     # 읽는 중인 .q
         self.depth = 0    # .q 안의 div 깊이
@@ -62,6 +69,12 @@ class Scan(HTMLParser):
             self.head = {"tag": tag, "id": a.get("id"), "c": (a.get("data-c") or "").split(), "text": "", "line": self.getpos()[0]}
         if tag == "script" and a.get("src") or tag == "link" or tag in ("iframe", "img") and re.match(r"https?:", a.get("src") or ""):
             self.ext.append(f"<{tag}> {a.get('src') or a.get('href') or ''}")
+        if "term" in cls:
+            self.terms.append({"id": a.get("id"), "line": self.getpos()[0], "tname": False, "plain": False})
+        elif self.terms and ("tname" in cls or "plain" in cls):
+            self.terms[-1]["tname" if "tname" in cls else "plain"] = True
+        if tag == "a" and "g" in cls:
+            self.glinks.append((a.get("href") or "", self.getpos()[0]))
         if tag == "code" and any(c.startswith("language-") for c in cls):
             self.langs.add(next(c for c in cls if c.startswith("language-"))[9:].lower())
         if tag == "div":
@@ -136,6 +149,7 @@ def main():
 
     fmt = g.get("unitFormat", "{u}")
     all_ids, sections, langs, cmap = {}, [], set(), {}
+    term_ids, glinks = [], []  # 용어 카드 id, (위치, 링크 대상)
     for u in units:
         tag = fmt.replace("{u}", u["key"])
         path = os.path.join(base, u.get("file") or "")
@@ -154,6 +168,13 @@ def main():
             all_ids[i] = tag
         for e in sc.ext:
             errs.append(f"{tag}: 외부 파일을 불러옵니다: {e}. 스크립트는 인라인으로 쓰고, 그림은 SVG나 data URI로 넣습니다")
+        for t in sc.terms:
+            if not (t["id"] or "").startswith("t-"):
+                errs.append(f"{tag} {t['line']}행: 용어 카드(.term)의 id는 't-'로 시작해야 합니다(용어 링크 a.g의 대상)")
+            if not (t["tname"] and t["plain"]):
+                errs.append(f"{tag} {t['line']}행: 용어 카드 {t['id']}에 .tname과 .plain이 모두 있어야 합니다(팝업과 용어 사전에 쓰임)")
+            term_ids.append(t["id"])
+        glinks += [(f"{tag} {ln}행", href) for href, ln in sc.glinks]
         if re.search(r"<h1\b", body, re.I):
             warns.append(f"{tag}: <h1>은 빌드가 붙이므로 조각에서는 <h2>부터 씁니다")
         h2 = [h for h in sc.heads if h["tag"] == "h2"]
@@ -204,8 +225,16 @@ def main():
         hp = os.path.join(base, g["home"])
         if os.path.isfile(hp):
             home = open(hp, encoding="utf-8").read().strip()
+            hs = Scan()
+            hs.feed(home)
+            glinks += [(f"첫 화면 {ln}행", href) for href, ln in hs.glinks]
+            if hs.terms:
+                warns.append("첫 화면 조각의 용어 카드는 용어 사전에서 단원 없이 묶입니다. 카드는 단원 조각에 두세요")
         else:
             errs.append(f"home 조각 파일이 없습니다: {g['home']}")
+    for where, href in glinks:
+        if not href.startswith("#") or href[1:] not in term_ids:
+            errs.append(f"{where}: 용어 링크 a.g의 href '{href}'에 해당하는 용어 카드(.term id)가 없습니다")
     for w in warns:
         print("경고:", w)
     if errs:
@@ -251,7 +280,8 @@ def main():
     json.dump(gmap, open(mp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     labs = len(re.findall(r'class="lab\b', page))
     quiz = len(re.findall(r'class="q\b', page))
-    print(f"작성: {out} ({len(page):,}자) · 단원 {len(sections)} · 개념 절 {len(cmap)} · 실습 {labs} · 자가 점검 {quiz}"
+    print(f"작성: {out} ({len(page):,}자) · 단원 {len(sections)} · 개념 절 {len(cmap)} · 용어 카드 {len(term_ids)}"
+          f" (링크 {len(glinks)}) · 실습 {labs} · 자가 점검 {quiz}"
           + (f" (색칠 언어: {', '.join(sorted(langs))})" if langs else ""))
     print(f"개념 지도: {mp}" + ("" if g.get("url") else " (url 없음: 게시한 뒤 guide.json에 url을 적고 다시 빌드하면 클리닉 링크가 생깁니다)"))
     if len(page) > 3_000_000:

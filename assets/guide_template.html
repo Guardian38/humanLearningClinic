@@ -27,6 +27,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
   --fix-bg: #fff8e5;   --fix-bd: #ecd189;  --fix-fg: #8a6500;
   --ans-bg: #eef9f3;   --ans-bd: #a6dbbf;
   --lab-bg: #ffffff;   --lab-bd: #b9c6da;
+  --term-bg: #f2faf6;  --term-bd: #a6dbbf;
   --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 2px 8px rgba(20, 30, 50, .05);
 /*@@CODE_VARS_LIGHT@@*/
 }
@@ -39,6 +40,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
     --idea-bg: #18233a; --idea-bd: #34508a; --pit-bg: #2e1b1d; --pit-bd: #7a3a3d;
     --mine-bg: #231d36; --mine-bd: #54458a; --fix-bg: #2d2716; --fix-bd: #7a6630; --fix-fg: #e0c060;
     --ans-bg: #16291f; --ans-bd: #2f6a4c; --lab-bg: #1a1f27; --lab-bd: #3a4556;
+    --term-bg: #15251d; --term-bd: #2f6a4c;
     --shadow: none;
 /*@@CODE_VARS_DARK@@*/
   }
@@ -51,6 +53,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
   --idea-bg: #18233a; --idea-bd: #34508a; --pit-bg: #2e1b1d; --pit-bd: #7a3a3d;
   --mine-bg: #231d36; --mine-bd: #54458a; --fix-bg: #2d2716; --fix-bd: #7a6630; --fix-fg: #e0c060;
   --ans-bg: #16291f; --ans-bd: #2f6a4c; --lab-bg: #1a1f27; --lab-bd: #3a4556;
+  --term-bg: #15251d; --term-bd: #2f6a4c;
   --shadow: none;
 /*@@CODE_VARS_DARK@@*/
 }
@@ -95,7 +98,7 @@ nav.toc ol { list-style: none; margin: 6px 0 0; padding-left: 4px; columns: 2; c
 
 h2 { font-size: 23px; margin: 48px 0 12px; padding-top: 8px; border-top: 2px solid var(--border); scroll-margin-top: 60px; }
 h3 { font-size: 18px; margin: 28px 0 8px; scroll-margin-top: 60px; }
-h2.flash, h3.flash { animation: flash 1.6s ease-out; }
+h2.flash, h3.flash, .term.flash { animation: flash 1.6s ease-out; }
 @keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
 p { margin: 8px 0; }
 ul, ol { padding-left: 22px; }
@@ -124,6 +127,38 @@ mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; }
 .def .ref, .ref { color: var(--muted); font-size: 13px; }
 .formula { background: var(--surface); border: 1px dashed var(--border); border-radius: 8px; padding: 8px 14px; margin: 10px 0; overflow-x: auto; }
 .oneline { font-size: 18px; font-weight: 700; margin: 10px 0 4px; }
+
+/* 그림 */
+figure.fig { margin: 14px 0; text-align: center; }
+figure.fig > svg, .term figure > svg { height: auto; max-width: 100%; }
+figure figcaption { font-size: 13.5px; color: var(--muted); line-height: 1.55; margin-top: 4px; text-align: left; }
+
+/* 용어 카드(.term#t-…)와 용어 풀이 링크(a.g). 카드의 .tname·.plain이 팝업과 용어 사전에 그대로 쓰인다 */
+.term { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 44%); gap: 6px 18px; align-items: start;
+  background: var(--term-bg); border: 1px solid var(--term-bd); border-left: 4px solid var(--c3); border-radius: 10px;
+  padding: 12px 16px; margin: 16px 0; scroll-margin-top: 60px; }
+.term.nofig { grid-template-columns: minmax(0, 1fr); }
+.term .tname { font-size: 17px; font-weight: 700; }
+.term .tname::before { content: "용어"; font-size: 11.5px; font-weight: 700; color: var(--surface); background: var(--c3);
+  border-radius: 999px; padding: 1px 8px; margin-right: 8px; vertical-align: 2px; }
+.tname small { font-weight: 400; color: var(--muted); font-size: 13.5px; margin-left: 4px; }
+.term .plain { margin: 4px 0 6px; }
+.term .ex, .term .why { margin: 6px 0; font-size: 15px; }
+.term .ex::before { content: "예  "; font-weight: 700; color: var(--c3); }
+.term .why::before { content: "왜 이 이름?  "; font-weight: 700; color: var(--c3); }
+.term figure { margin: 0; text-align: center; }
+.term figure > svg { width: 100%; max-height: 250px; }
+@media (max-width: 640px) { .term { grid-template-columns: minmax(0, 1fr); } }
+a.g { color: inherit; text-decoration: underline dotted var(--c3); text-decoration-thickness: 2px; text-underline-offset: 3px; cursor: help; }
+a.g:hover { color: var(--c3); }
+.gpop { position: absolute; z-index: 30; width: max-content; max-width: min(380px, calc(100vw - 24px)); background: var(--surface);
+  border: 1px solid var(--term-bd); border-left: 4px solid var(--c3); border-radius: 10px; box-shadow: 0 6px 22px rgba(0, 0, 0, .2);
+  padding: 9px 14px; font-size: 14.5px; line-height: 1.6; }
+.gpop .tname { font-weight: 700; margin-bottom: 2px; }
+.gpop .more { font-size: 13px; margin-top: 4px; }
+dl.glist { margin: 6px 0 18px; }
+dl.glist dt { font-weight: 700; margin-top: 8px; }
+dl.glist dd { margin: 0 0 0 16px; font-size: 15px; }
 
 table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 14.5px; }
 th, td { border: 1px solid var(--border); padding: 6px 9px; text-align: left; vertical-align: top; }
@@ -335,6 +370,85 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
     mjChain = mjChain.then(() => MJ.typesetPromise([sec])).catch(() => {});
   };
 
+  const typesetEl = (el) => {
+    const MJ = window.MathJax;
+    if (MJ && MJ.typesetPromise) mjChain = mjChain.then(() => MJ.typesetPromise([el])).catch(() => {});
+    return mjChain;
+  };
+
+  /* ---------- 용어: 카드(.term#t-…) 모으기, 풀이 팝업(a.g), 용어 사전(#glossary) ---------- */
+  const TERMS = {};
+  function collectTerms() {  // 수식이 그려지기 전의 원문을 저장해 둔다(팝업에서 다시 그린다)
+    G.$$(".term[id]").forEach((t) => {
+      const name = G.$(".tname", t), plain = G.$(".plain", t), sec = t.closest(".unit");
+      TERMS[t.id] = { name: name ? name.innerHTML : t.id, plain: plain ? plain.innerHTML : "", unit: sec ? sec.dataset.unit : "" };
+    });
+  }
+  let pop = null, popFor = null, popRect = null, showT = 0, hideT = 0;
+  function hidePop() { clearTimeout(showT); clearTimeout(hideT); if (pop) pop.remove(); pop = null; popFor = null; }
+  function placePop() {
+    if (!pop || !popRect) return;
+    const r = popRect, w = pop.offsetWidth, h = pop.offsetHeight;
+    let left = Math.min(Math.max(12, r.left), innerWidth - w - 12), top = r.bottom + 6;
+    if (top + h > innerHeight - 8 && r.top - h - 6 > 8) top = r.top - h - 6;
+    pop.style.left = (left + popRect.sx) + "px"; pop.style.top = (top + popRect.sy) + "px";
+  }
+  function showPop(a) {
+    const id = (a.getAttribute("href") || "").replace(/^#/, ""), t = TERMS[id];
+    if (!t) return false;
+    const r = a.getBoundingClientRect();  // 팝업 안의 링크면 아래 hidePop()으로 사라지므로 먼저 잰다
+    popRect = { left: r.left, top: r.top, bottom: r.bottom, sx: scrollX, sy: scrollY };
+    hidePop();
+    const u = CONFIG.units.find((x) => x.key === t.unit);
+    pop = document.createElement("div"); pop.className = "gpop"; pop.setAttribute("role", "tooltip");
+    pop.innerHTML = `<div class="tname">${t.name}</div><div>${t.plain}</div><div class="more"><a href="#${id}">${u ? unitLabel(u) + " " : ""}용어 카드에서 그림·예 보기 →</a></div>`;
+    document.body.appendChild(pop); popFor = a; placePop();
+    pop.addEventListener("mouseenter", () => clearTimeout(hideT));
+    pop.addEventListener("mouseleave", () => { hideT = setTimeout(hidePop, 250); });
+    const me = pop; typesetEl(pop).then(() => { if (pop === me) placePop(); });
+    return true;
+  }
+  function bindTerms() {
+    const hover = matchMedia("(hover: hover)").matches;
+    document.addEventListener("mouseover", (e) => {
+      const a = e.target.closest && e.target.closest("a.g");
+      if (!hover || !a || a === popFor) return;
+      clearTimeout(showT); clearTimeout(hideT);
+      showT = setTimeout(() => {
+        // 팝업 안의 용어에서 연 풀이는 옛 팝업과 함께 링크가 사라지므로, 새 팝업으로 마우스가 들어가지 않으면 닫는다
+        if (showPop(a) && !document.contains(a)) hideT = setTimeout(hidePop, 1200);
+      }, 180);
+    });
+    document.addEventListener("mouseout", (e) => {
+      const a = e.target.closest && e.target.closest("a.g");
+      if (!a) return;
+      clearTimeout(showT);
+      if (a === popFor) hideT = setTimeout(hidePop, 250);
+    });
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest && e.target.closest("a.g");
+      if (a) {
+        if (a === popFor) { hidePop(); return; }  // 이미 풀이가 떠 있으면 카드로 이동
+        if (showPop(a)) e.preventDefault();          // 터치: 첫 탭은 풀이만
+        return;
+      }
+      if (pop && !pop.contains(e.target)) hidePop();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePop(); });
+    // 휴대폰은 주소창이 접히고 펴질 때도 resize가 오므로, 폭이 바뀔 때만 닫는다
+    let lastW = innerWidth;
+    window.addEventListener("resize", () => { if (innerWidth !== lastW) { lastW = innerWidth; hidePop(); } });
+  }
+  function buildGlossary() {
+    const box = G.$("#glossary");
+    if (!box) return;
+    const by = {};
+    Object.entries(TERMS).forEach(([id, t]) => (by[t.unit] = by[t.unit] || []).push([id, t]));
+    box.innerHTML = CONFIG.units.filter((u) => by[u.key]).map((u) => `<h3>${unitLabel(u)} ${u.title}</h3><dl class="glist">${
+      by[u.key].map(([id, t]) => `<dt><a href="#${id}">${t.name}</a></dt><dd>${t.plain}</dd>`).join("")}</dl>`).join("");
+    if (typeset.has("home")) typesetEl(box);
+  }
+
   /* ---------- 단원 전환 ---------- */
   const unitLabel = (u) => (CONFIG.unitFormat || "{u}").replace("{u}", u.key);
   function show(target) {
@@ -451,11 +565,12 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    collectTerms(); buildGlossary(); bindTerms();
     buildTopbar(); buildTocs(); buildFootNavs();
     G.$$(".unit[data-unit]").forEach((s) => { if (s.dataset.unit) buildQuiz(s); });
     G.bindOut(); route();
   });
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", () => { hidePop(); route(); });
   let rt;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(G.redrawAll, 150); });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", G.redrawAll);
@@ -465,6 +580,15 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 </script>
 </head>
 <body>
+<!-- 본문 SVG가 같이 쓰는 화살촉: marker-end="url(#ah)"(글자색), #ah1~#ah5(--c1~--c5) -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--fg)"/></marker>
+  <marker id="ah1" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--c1)"/></marker>
+  <marker id="ah2" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--c2)"/></marker>
+  <marker id="ah3" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--c3)"/></marker>
+  <marker id="ah4" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--c4)"/></marker>
+  <marker id="ah5" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--c5)"/></marker>
+</defs></svg>
 <div class="wrap">
 <section class="unit" id="home" data-unit="">
 <header class="hero">
